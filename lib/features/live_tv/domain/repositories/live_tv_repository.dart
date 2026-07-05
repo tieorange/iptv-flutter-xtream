@@ -9,6 +9,11 @@ abstract interface class LiveTvRepository {
 
   TaskEither<Failure, List<LiveChannel>> getChannels(int categoryId);
 
+  /// All channels across every category in one call (the panel returns the
+  /// full list when `category_id` is omitted) — used by search rather than
+  /// fetching category-by-category.
+  TaskEither<Failure, List<LiveChannel>> getAllChannels();
+
   /// Resolves a channel's playback URL for the given output [format]
   /// (`m3u8` or `ts`). Building the URL is pure string work against the
   /// cached Xtream client — the only failure mode is "not logged in".

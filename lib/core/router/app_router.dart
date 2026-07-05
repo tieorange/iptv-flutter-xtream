@@ -1,7 +1,6 @@
 import 'package:go_router/go_router.dart';
 
 import '../di/injection.dart';
-import '../theme/placeholder_page.dart';
 import 'auth_refresh_listenable.dart';
 import 'home_shell.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
@@ -12,6 +11,24 @@ import '../../features/live_tv/presentation/pages/live_categories_page.dart';
 import '../../features/live_tv/presentation/pages/live_channels_page.dart';
 import '../../features/live_tv/domain/entities/live_channel.dart';
 import '../../features/player/presentation/pages/player_page.dart';
+import '../../features/vod/domain/entities/vod_category.dart';
+import '../../features/vod/domain/entities/vod_detail.dart';
+import '../../features/vod/domain/entities/vod_item.dart';
+import '../../features/vod/presentation/pages/vod_categories_page.dart';
+import '../../features/vod/presentation/pages/vod_detail_page.dart';
+import '../../features/vod/presentation/pages/vod_items_page.dart';
+import '../../features/vod/presentation/pages/vod_player_page.dart';
+import '../../features/series/domain/entities/series_category.dart';
+import '../../features/series/domain/entities/series_detail.dart';
+import '../../features/series/domain/entities/series_episode.dart';
+import '../../features/series/domain/entities/series_show.dart';
+import '../../features/series/presentation/pages/series_categories_page.dart';
+import '../../features/series/presentation/pages/series_episodes_page.dart';
+import '../../features/series/presentation/pages/series_list_page.dart';
+import '../../features/series/presentation/pages/series_player_page.dart';
+import '../../features/series/presentation/pages/series_seasons_page.dart';
+import '../../features/favorites/presentation/pages/favorites_page.dart';
+import '../../features/search/presentation/pages/search_page.dart';
 
 /// Full Phase-1 route table from PLAN.md, wired up front in M0 so every
 /// later milestone only swaps a placeholder page for the real one — the
@@ -75,17 +92,20 @@ GoRouter buildAppRouter() {
             GoRoute(
               path: '/home/vod',
               name: 'vodCategories',
-              builder: (context, state) => const PlaceholderPage('VOD categories'),
+              builder: (context, state) => const VodCategoriesPage(),
               routes: [
                 GoRoute(
                   path: ':categoryId',
                   name: 'vodItems',
-                  builder: (context, state) => const PlaceholderPage('VOD items'),
+                  builder: (context, state) => VodItemsPage(
+                    categoryId: int.parse(state.pathParameters['categoryId']!),
+                    category: state.extra as VodCategory?,
+                  ),
                   routes: [
                     GoRoute(
                       path: ':itemId',
                       name: 'vodDetail',
-                      builder: (context, state) => const PlaceholderPage('VOD detail'),
+                      builder: (context, state) => VodDetailPage(item: state.extra as VodItem),
                     ),
                   ],
                 ),
@@ -96,22 +116,28 @@ GoRouter buildAppRouter() {
             GoRoute(
               path: '/home/series',
               name: 'seriesCategories',
-              builder: (context, state) => const PlaceholderPage('Series categories'),
+              builder: (context, state) => const SeriesCategoriesPage(),
               routes: [
                 GoRoute(
                   path: ':categoryId',
                   name: 'seriesList',
-                  builder: (context, state) => const PlaceholderPage('Series list'),
+                  builder: (context, state) => SeriesListPage(
+                    categoryId: int.parse(state.pathParameters['categoryId']!),
+                    category: state.extra as SeriesCategory?,
+                  ),
                   routes: [
                     GoRoute(
                       path: ':seriesId',
                       name: 'seriesSeasons',
-                      builder: (context, state) => const PlaceholderPage('Series seasons'),
+                      builder: (context, state) => SeriesSeasonsPage(show: state.extra as SeriesShow),
                       routes: [
                         GoRoute(
                           path: ':seasonId',
                           name: 'seriesEpisodes',
-                          builder: (context, state) => const PlaceholderPage('Series episodes'),
+                          builder: (context, state) => SeriesEpisodesPage(
+                            detail: state.extra as SeriesDetail,
+                            seasonNumber: int.parse(state.pathParameters['seasonId']!),
+                          ),
                         ),
                       ],
                     ),
@@ -124,14 +150,14 @@ GoRouter buildAppRouter() {
             GoRoute(
               path: '/home/search',
               name: 'search',
-              builder: (context, state) => const PlaceholderPage('Search'),
+              builder: (context, state) => const SearchPage(),
             ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/home/favorites',
               name: 'favorites',
-              builder: (context, state) => const PlaceholderPage('Favorites'),
+              builder: (context, state) => const FavoritesPage(),
             ),
           ]),
         ],
@@ -144,12 +170,12 @@ GoRouter buildAppRouter() {
       GoRoute(
         path: '/player/vod/:itemId',
         name: 'playerVod',
-        builder: (context, state) => const PlaceholderPage('Player: VOD'),
+        builder: (context, state) => VodPlayerPage(detail: state.extra as VodDetail),
       ),
       GoRoute(
         path: '/player/series/:episodeId',
         name: 'playerSeries',
-        builder: (context, state) => const PlaceholderPage('Player: series'),
+        builder: (context, state) => SeriesPlayerPage(episode: state.extra as SeriesEpisode),
       ),
     ],
   );

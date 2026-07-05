@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/utils/url_scrubber.dart';
 import '../../domain/entities/provider_profile.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_local_datasource.dart';
@@ -70,6 +71,6 @@ class AuthRepositoryImpl implements AuthRepository {
 
   Failure _toFailure(Object error, StackTrace _) {
     if (error is Failure) return error;
-    return UnknownFailure(error.toString());
+    return UnknownFailure(scrubMessage(error.toString()));
   }
 }

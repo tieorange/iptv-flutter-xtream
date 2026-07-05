@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/utils/url_scrubber.dart';
 import '../../domain/entities/playback_source.dart';
 import '../../domain/repositories/playback_controller.dart';
 
@@ -29,7 +30,7 @@ class AvPlayerController implements PlaybackController {
         _controller = controller;
         return unit;
       },
-      (error, _) => PlaybackFailure(error.toString()),
+      (error, _) => PlaybackFailure(scrubMessage(error.toString())),
     );
   }
 

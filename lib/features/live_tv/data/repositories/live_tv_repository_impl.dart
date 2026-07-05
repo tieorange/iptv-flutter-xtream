@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/utils/url_scrubber.dart';
 import '../../domain/entities/live_category.dart';
 import '../../domain/entities/live_channel.dart';
 import '../../domain/repositories/live_tv_repository.dart';
@@ -25,6 +26,11 @@ class LiveTvRepositoryImpl implements LiveTvRepository {
   }
 
   @override
+  TaskEither<Failure, List<LiveChannel>> getAllChannels() {
+    return TaskEither.tryCatch(() => _remote.getAllChannels(), _toFailure);
+  }
+
+  @override
   TaskEither<Failure, String> getStreamUrl(LiveChannel channel, {String format = 'm3u8'}) {
     return TaskEither.tryCatch(
       () async => _remote.getStreamUrl(channel.id, format),
@@ -34,6 +40,6 @@ class LiveTvRepositoryImpl implements LiveTvRepository {
 
   Failure _toFailure(Object error, StackTrace _) {
     if (error is Failure) return error;
-    return UnknownFailure(error.toString());
+    return UnknownFailure(scrubMessage(error.toString()));
   }
 }

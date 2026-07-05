@@ -43,17 +43,23 @@ class VodRemoteDataSource {
     }
   }
 
-  Future<List<domain.VodItem>> getItems(int categoryId) async {
+  Future<List<domain.VodItem>> getItems(int categoryId) {
+    return _fetchItems(category: Category(categoryId: categoryId), fallbackCategoryId: categoryId);
+  }
+
+  /// All VOD items across every category — used by search instead of
+  /// iterating category-by-category.
+  Future<List<domain.VodItem>> getAllItems() => _fetchItems();
+
+  Future<List<domain.VodItem>> _fetchItems({Category? category, int? fallbackCategoryId}) async {
     try {
-      final items = await _client().vodItemsData(
-        category: Category(categoryId: categoryId),
-      );
+      final items = await _client().vodItemsData(category: category);
       return items
           .where((item) => item.streamId != null && item.name != null)
           .map((item) => domain.VodItem(
                 id: item.streamId!,
                 name: item.name!,
-                categoryId: item.categoryId ?? categoryId,
+                categoryId: item.categoryId ?? fallbackCategoryId ?? 0,
                 streamIcon: item.streamIcon,
                 containerExtension: item.containerExtension,
               ))

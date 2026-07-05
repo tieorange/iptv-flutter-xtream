@@ -28,6 +28,22 @@ String scrubUrl(String url) {
       .toString();
 }
 
+/// Scrubs any Xtream URL that appears *inside* a larger string — e.g. a
+/// `video_player`/`media_kit` exception message that embeds the stream URL
+/// (credentials and all) via `error.toString()`. Unlike [scrubUrl], the
+/// input doesn't have to be a bare URL.
+String scrubMessage(String message) {
+  var result = message.replaceAllMapped(
+    RegExp(r'(username|password|user|pass)=[^&\s"]*', caseSensitive: false),
+    (m) => '${m[1]}=***',
+  );
+  result = result.replaceAllMapped(
+    RegExp(r'/(live|movie|series)/[^/\s"]+/[^/\s"]+/'),
+    (m) => '/${m[1]}/***/***/',
+  );
+  return result;
+}
+
 bool _isSensitiveKey(String key) {
   final normalized = key.toLowerCase();
   return normalized == 'username' ||

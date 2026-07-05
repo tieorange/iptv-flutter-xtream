@@ -6,8 +6,8 @@ import '../../../vod/domain/repositories/vod_repository.dart';
 import '../entities/playback_engine_choice.dart';
 import '../entities/playback_source.dart';
 
-/// VOD/series content is usually a direct file (mp4/mkv) or already-HLS —
-/// unlike live TV, there's no `.m3u8`-first probe here: the panel's
+/// VOD content is usually a direct file (mp4/mkv) or already-HLS — unlike
+/// live TV, there's no `.m3u8`-first probe here: the panel's
 /// `container_extension` field is authoritative, so the engine choice is a
 /// pure lookup rather than a network probe.
 class PlayVodItemUseCase {
@@ -15,14 +15,10 @@ class PlayVodItemUseCase {
 
   final VodRepository _repository;
 
-  static const _avSupportedExtensions = {'mp4', 'mov', 'm4v', 'm3u8'};
-
   TaskEither<Failure, PlaybackEngineChoice> call(VodDetail detail) {
     return _repository.getStreamUrl(detail).map((url) {
       final extension = detail.containerExtension?.toLowerCase();
-      final kind = _avSupportedExtensions.contains(extension)
-          ? PlaybackEngineKind.av
-          : PlaybackEngineKind.mpv;
+      final kind = engineKindForContainerExtension(extension);
       return PlaybackEngineChoice(kind, PlaybackSource(url: url, containerExtension: extension));
     });
   }

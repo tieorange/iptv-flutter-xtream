@@ -8,9 +8,13 @@ import 'airplay_button.dart';
 /// (M3) gets its own `media_kit_video`-based chrome widget — chewie only
 /// wraps `video_player`, it can't drive media_kit's player.
 class PlayerChromeVideoPlayer extends StatefulWidget {
-  const PlayerChromeVideoPlayer({super.key, required this.controller});
+  const PlayerChromeVideoPlayer({super.key, required this.controller, required this.isLive});
 
   final AvPlayerController controller;
+
+  /// Live TV hides the seek bar; VOD/series show it (chewie's default when
+  /// `isLive: false`).
+  final bool isLive;
 
   @override
   State<PlayerChromeVideoPlayer> createState() => _PlayerChromeVideoPlayerState();
@@ -25,7 +29,7 @@ class _PlayerChromeVideoPlayerState extends State<PlayerChromeVideoPlayer> {
     _chewieController = ChewieController(
       videoPlayerController: widget.controller.videoPlayerController,
       autoPlay: true,
-      isLive: true,
+      isLive: widget.isLive,
     );
   }
 

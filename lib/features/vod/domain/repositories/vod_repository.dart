@@ -10,6 +10,9 @@ abstract interface class VodRepository {
 
   TaskEither<Failure, List<VodItem>> getItems(int categoryId);
 
+  /// All VOD items across every category — used by search.
+  TaskEither<Failure, List<VodItem>> getAllItems();
+
   TaskEither<Failure, VodDetail> getDetail(VodItem item);
 
   /// Builds the playback URL using [detail.containerExtension] as reported

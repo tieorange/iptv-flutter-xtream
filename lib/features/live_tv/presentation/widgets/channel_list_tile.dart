@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../epg/presentation/widgets/now_next_strip.dart';
+import '../../../favorites/domain/entities/favorite_item.dart';
+import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../domain/entities/live_channel.dart';
 
 class ChannelListTile extends StatelessWidget {
@@ -20,6 +23,15 @@ class ChannelListTile extends StatelessWidget {
               errorBuilder: (context, error, stackTrace) => const Icon(Icons.live_tv),
             ),
       title: Text(channel.name),
+      subtitle: NowNextStrip(channelId: channel.id),
+      trailing: FavoriteButton(
+        item: FavoriteItem(
+          itemId: channel.id,
+          itemType: FavoriteItemType.live,
+          name: channel.name,
+          streamIcon: channel.streamIcon,
+        ),
+      ),
       onTap: onTap,
     );
   }

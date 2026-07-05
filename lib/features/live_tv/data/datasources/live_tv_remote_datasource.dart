@@ -45,17 +45,23 @@ class LiveTvRemoteDataSource {
     }
   }
 
-  Future<List<LiveChannel>> getChannels(int categoryId) async {
+  Future<List<LiveChannel>> getChannels(int categoryId) {
+    return _fetchChannels(category: Category(categoryId: categoryId), fallbackCategoryId: categoryId);
+  }
+
+  /// Omitting `category_id` returns every channel across all categories in
+  /// one call — used by search instead of iterating category-by-category.
+  Future<List<LiveChannel>> getAllChannels() => _fetchChannels();
+
+  Future<List<LiveChannel>> _fetchChannels({Category? category, int? fallbackCategoryId}) async {
     try {
-      final items = await _client().liveStreamItemsData(
-        category: Category(categoryId: categoryId),
-      );
+      final items = await _client().liveStreamItemsData(category: category);
       return items
           .where((item) => item.streamId != null && item.name != null)
           .map((item) => LiveChannel(
                 id: item.streamId!,
                 name: item.name!,
-                categoryId: item.categoryId ?? categoryId,
+                categoryId: item.categoryId ?? fallbackCategoryId ?? 0,
                 streamIcon: item.streamIcon,
                 epgChannelId: item.epgChannelId,
               ))

@@ -3,6 +3,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/utils/url_scrubber.dart';
 import '../../domain/entities/playback_source.dart';
 import '../../domain/repositories/playback_controller.dart';
 
@@ -30,7 +31,7 @@ class MpvPlayerController implements PlaybackController {
         await _player.open(Media(source.url));
         return unit;
       },
-      (error, _) => PlaybackFailure(error.toString()),
+      (error, _) => PlaybackFailure(scrubMessage(error.toString())),
     );
   }
 

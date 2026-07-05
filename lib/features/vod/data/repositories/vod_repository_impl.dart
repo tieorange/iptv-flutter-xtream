@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/utils/url_scrubber.dart';
 import '../../domain/entities/vod_category.dart';
 import '../../domain/entities/vod_detail.dart';
 import '../../domain/entities/vod_item.dart';
@@ -23,6 +24,11 @@ class VodRepositoryImpl implements VodRepository {
   }
 
   @override
+  TaskEither<Failure, List<VodItem>> getAllItems() {
+    return TaskEither.tryCatch(() => _remote.getAllItems(), _toFailure);
+  }
+
+  @override
   TaskEither<Failure, VodDetail> getDetail(VodItem item) {
     return TaskEither.tryCatch(() => _remote.getDetail(item), _toFailure);
   }
@@ -37,6 +43,6 @@ class VodRepositoryImpl implements VodRepository {
 
   Failure _toFailure(Object error, StackTrace _) {
     if (error is Failure) return error;
-    return UnknownFailure(error.toString());
+    return UnknownFailure(scrubMessage(error.toString()));
   }
 }
