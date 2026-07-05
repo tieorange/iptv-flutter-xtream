@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:video_player/video_player.dart';
 
@@ -30,7 +31,11 @@ class AvPlayerController implements PlaybackController {
         _controller = controller;
         return unit;
       },
-      (error, _) => PlaybackFailure(scrubMessage(error.toString())),
+      (error, stackTrace) {
+        debugPrint('AvPlayerController initialization failed: $error');
+        debugPrint('Stack trace: $stackTrace');
+        return PlaybackFailure(scrubMessage(error.toString()));
+      },
     );
   }
 

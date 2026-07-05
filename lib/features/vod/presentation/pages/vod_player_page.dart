@@ -15,13 +15,17 @@ class VodPlayerPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => getIt<PlayerCubit>()..playVodItem(detail),
-      child: Scaffold(
-        appBar: AppBar(title: Text(detail.name)),
-        body: Center(
-          child: PlayerBody(
-            onRetry: () => context.read<PlayerCubit>().playVodItem(detail),
-          ),
-        ),
+      child: Builder(
+        builder: (context) {
+          return Scaffold(
+            appBar: AppBar(title: Text(detail.name)),
+            body: Center(
+              child: PlayerBody(
+                onRetry: () => context.read<PlayerCubit>().playVodItem(detail),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

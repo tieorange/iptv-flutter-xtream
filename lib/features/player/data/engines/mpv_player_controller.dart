@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -31,7 +32,11 @@ class MpvPlayerController implements PlaybackController {
         await _player.open(Media(source.url));
         return unit;
       },
-      (error, _) => PlaybackFailure(scrubMessage(error.toString())),
+      (error, stackTrace) {
+        debugPrint('MpvPlayerController initialization failed: $error');
+        debugPrint('Stack trace: $stackTrace');
+        return PlaybackFailure(scrubMessage(error.toString()));
+      },
     );
   }
 

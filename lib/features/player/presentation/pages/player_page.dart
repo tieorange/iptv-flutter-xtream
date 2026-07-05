@@ -16,23 +16,27 @@ class PlayerPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => getIt<PlayerCubit>()..playChannel(channel),
-      child: Scaffold(
-        appBar: AppBar(title: Text(channel.name)),
-        body: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: PlayerBody(
-                  onRetry: () => context.read<PlayerCubit>().playChannel(channel),
+      child: Builder(
+        builder: (context) {
+          return Scaffold(
+            appBar: AppBar(title: Text(channel.name)),
+            body: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: PlayerBody(
+                      onRetry: () => context.read<PlayerCubit>().playChannel(channel),
+                    ),
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: NowNextStrip(channelId: channel.id),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: NowNextStrip(channelId: channel.id),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
