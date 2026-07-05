@@ -20,6 +20,163 @@ started.
 (favorites — not sensitive) · `dio`+`dio_smart_retry` (HLS probe only) · `rxdart` (search
 debounce) · `bloc_test`+`mocktail` (tests).
 
+## Repo map — `lib/` folder by folder
+
+```text
+lib/
+  main.dart
+  core/
+    di/injection.dart
+    error/failures.dart
+    network/{api_client,retry_interceptor,scrubbing_log_interceptor,xtream_client_factory}.dart
+    router/{app_router,auth_refresh_listenable,home_shell}.dart
+    storage/{secure_storage,profile_local_store}.dart
+    utils/url_scrubber.dart
+  features/
+    auth/  live_tv/  player/  vod/  series/  epg/  favorites/  search/
+```
+
+### `lib/main.dart`
+
+Entry point. Order matters: `MediaKit.ensureInitialized()` first (media_kit needs this before
+any `Player()` is constructed anywhere in the app) → `configureDependencies()` →
+`getIt<AuthCubit>().restoreActiveProfile()` (fire-and-forget; checks Keychain for a saved
+session) → `runApp(IptvApp())`. `IptvApp` wraps `MaterialApp.router` in a single
+`BlocProvider.value` for the app-wide `AuthCubit` singleton — every other Cubit/Bloc in the app
+is created locally per-page via `BlocProvider(create: ...)`, not here.
+
+### `lib/core/` — shared infrastructure, imported by every feature
+
+- **`di/injection.dart`** — the entire `get_it` registration graph, one big
+  `configureDependencies()` function. This is the map of the whole app: read it top-to-bottom to
+  see every concrete wiring decision (what implements what, singleton vs factory). New feature →
+  add its registrations here, grouped with a comment, roughly in dependency order (a repository's
+  registration must be able to resolve its own datasource dependency, but `get_it` factory
+  closures resolve lazily so strict ordering only matters for readability, not correctness).
+- **`error/failures.dart`** — the sealed `Failure` hierarchy every repository returns instead of
+  throwing: `NetworkFailure`, `AuthFailure`, `ParseFailure`, `CacheFailure`, `PlaybackFailure`,
+  `UnknownFailure`. Add a new subtype here if a genuinely new failure mode shows up; don't
+  stringly-type errors elsewhere.
+- **`network/api_client.dart`** — `buildApiClient()` builds the *one* shared `Dio` instance
+  (registered as a singleton in `injection.dart`). Currently its only real consumer is
+  `HlsAvailabilityProbe`; the Xtream API calls themselves go through `xtream_code_client`'s own
+  internal `http.Client`, not this `Dio`.
+- **`network/retry_interceptor.dart`** — thin wrapper around `dio_smart_retry`'s defaults
+  (retries timeouts/connection errors/5xx/408/429 with backoff, never 4xx). Don't write a custom
+  retry evaluator unless the defaults are proven wrong for a specific panel.
+- **`network/scrubbing_log_interceptor.dart`** — debug-only `Dio` request-failure logger; always
+  scrubs the URL first. This is a `Dio` interceptor, so it only sees `Dio` traffic — it does not
+  see `XtreamClient`'s internal HTTP calls or `video_player`/`media_kit` errors, which is why
+  `scrubMessage()` (see Security) also has to be applied manually at those other call sites.
+- **`network/xtream_client_factory.dart`** — `XtreamClientFactory.forProfile(ProviderProfile)`
+  builds an `XtreamClient` (from `xtream_code_client`) bound to one profile's
+  baseUrl/username/password. Every feature's remote datasource (`LiveTvRemoteDataSource`,
+  `VodRemoteDataSource`, `SeriesRemoteDataSource`, `EpgRemoteDataSource`) follows the exact same
+  pattern: hold this factory + `AuthCubit`, lazily build and cache one `XtreamClient` keyed by
+  `state.profile.id`, rebuild if the active profile changes. If you add a new feature that talks
+  to the panel, copy this caching pattern rather than re-deriving it — see any existing
+  `*_remote_datasource.dart`'s `_client()` method for the ~10-line template.
+- **`router/app_router.dart`** — the single `GoRouter` instance and the entire route table (every
+  route in the app is defined here, even though the page widgets themselves live in their
+  feature folders). Also owns the one top-level `redirect` callback that reads `AuthCubit.state`
+  to bounce between `/profiles` (unauthenticated) and `/home/*` (authenticated). Adding a page
+  almost always means adding a `GoRoute` here, not just building the widget.
+- **`router/auth_refresh_listenable.dart`** — bridges `AuthCubit`'s `Stream<AuthState>` to the
+  `Listenable` that `GoRouter(refreshListenable: ...)` requires — Cubits expose streams, not
+  `ChangeNotifier`s, so this glue is mandatory, not optional. Don't call
+  `GoRouter.of(context).refresh()` manually from inside a Cubit; this listenable already does it.
+- **`router/home_shell.dart`** — the authenticated `/home/*` bottom-nav shell
+  (`StatefulShellRoute.indexedStack` wrapper: Live / VOD / Series / Search / Favorites tabs, each
+  keeping its own navigation stack). Has the logout button in its `AppBar`.
+- **`storage/secure_storage.dart`** — thin `FlutterSecureStorage` wrapper (Keychain-backed).
+  Everything that touches a profile's username/password goes through this. Never subclass
+  `FlutterSecureStorage` directly elsewhere — go through this wrapper so tests can swap it for an
+  in-memory fake (see Testing).
+- **`storage/profile_local_store.dart`** — saved-profile list + "which profile is active" on top
+  of `SecureStorage` (JSON blob per profile under `profile:<id>`, plus an index list and an
+  `active_profile_id` key). This is what `AuthLocalDataSource` calls.
+- **`utils/url_scrubber.dart`** — see Security section below; `scrubUrl()` vs `scrubMessage()`.
+
+### `lib/features/<name>/` — the Clean Architecture slice, repeated per feature
+
+Every feature has the same three-layer shape. `live_tv` is the fullest worked example — read it
+first if you're adding a new feature or don't remember the pattern:
+
+```text
+live_tv/
+  domain/
+    entities/live_category.dart, live_channel.dart      # plain Dart, no Flutter/package imports
+    repositories/live_tv_repository.dart                 # abstract interface, TaskEither<Failure, T>
+    usecases/get_live_categories_usecase.dart, get_live_channels_usecase.dart   # one class per action, just delegates to the repository
+  data/
+    datasources/live_tv_remote_datasource.dart           # wraps XtreamClient, catches RequestException/ParseException, throws Failure
+    repositories/live_tv_repository_impl.dart             # implements the domain interface, TaskEither.tryCatch(..., _toFailure) around the datasource
+  presentation/
+    cubit/live_categories_cubit.dart, live_channels_cubit.dart   # sealed *State classes (Loading/Loaded/Error), load() method
+    pages/live_categories_page.dart, live_channels_page.dart      # BlocProvider(create: ...load()) + BlocBuilder + switch over sealed state
+    widgets/channel_list_tile.dart                        # row widget; embeds NowNextStrip + FavoriteButton from other features
+```
+
+The other five content/support features follow this exact shape — only the domain shape and a
+couple of specifics differ:
+
+| Feature | Domain entities | Repository | Notable difference from `live_tv` |
+|---|---|---|---|
+| `vod` | `VodCategory`, `VodItem`, `VodDetail` | `VodRepository` | Has a detail-fetch step (`GetVodDetailUseCase`/`VodDetailCubit`) between list and play — VOD needs `container_extension` from `get_vod_info`, not just the list item. |
+| `series` | `SeriesCategory`, `SeriesShow`, `SeriesSeason`, `SeriesEpisode`, `SeriesDetail` | `SeriesRepository` | One extra nesting level (categories → shows → seasons → episodes). `SeriesDetailCubit` fetches seasons+episodes-by-season *once*; `series_episodes_page.dart` is a plain `StatelessWidget` that reads the already-loaded `SeriesDetail` passed via `extra`, it does **not** re-fetch per season tap — see `series_seasons_page.dart` for how `extra: detail` is threaded through `go_router`. |
+| `epg` | `EpgProgram` | `EpgRepository` | Single use case (`GetNowNextUseCase`). `NowNextStrip` (presentation/widgets) is the only consumer, self-contained (creates its own `BlocProvider` inline wherever it's dropped) and silently renders nothing on any non-`Loaded` state — EPG is supplementary, never blocking. |
+| `favorites` | `FavoriteItem` (+ `FavoriteItemType` enum: live/vod/series) | `FavoritesRepository` | Backed by `shared_preferences`, not `SecureStorage` (not sensitive), keyed per `profileId`. `FavoriteButton` (presentation/widgets) is the same self-contained pattern as `NowNextStrip` — drop it anywhere with a `FavoriteItem`, it manages its own load/toggle state. |
+| `search` | `SearchResult` (+ `SearchResultType` enum) | *(none — depends directly on `LiveTvRepository`/`VodRepository`/`SeriesRepository`)* | The one feature using a full `Bloc` (`SearchBloc`) instead of a `Cubit`, because it needs `rxdart`'s `debounceTime`+`switchMap` event transformer on `SearchQueryChanged`. `SearchAllUseCase` (domain, but depends on the *other three features'* repository interfaces — an accepted cross-feature domain dependency) caches the flat `getAllChannels()`/`getAllItems()`/`getAllSeries()` results in memory for the app session; only the *first* search per session hits the network. |
+
+### `lib/features/player/` — shared by live/VOD/series, worth its own map
+
+This feature has no "list/detail" pages of its own — it's pure playback plumbing that
+`live_tv`'s `PlayerPage`, `vod`'s `VodPlayerPage`, and `series`'s `SeriesPlayerPage` all drive.
+
+- **`domain/entities/playback_source.dart`** — `{ url, containerExtension }`, the resolved thing
+  a player engine actually opens.
+- **`domain/entities/playback_engine_choice.dart`** — `PlaybackEngineKind` enum (`av`/`mpv`) +
+  `PlaybackEngineChoice` (kind + source) + the shared
+  `engineKindForContainerExtension(String? extension)` helper (mp4/mov/m4v/m3u8 → `av`, else
+  `mpv`) used by both VOD and series playback use cases.
+- **`domain/repositories/playback_controller.dart`** — abstract `PlaybackController` (`initialize`,
+  `dispose`); the two concrete engines implement this.
+- **`domain/repositories/playback_engine_selector.dart`** — abstract interface for the
+  probe-and-choose logic (implementation is data-layer, see below — this split exists so
+  `PlayChannelUseCase` doesn't import a `data/` file).
+- **`domain/usecases/play_channel_usecase.dart`** — live TV path: resolves both `.m3u8` and `.ts`
+  URLs from `LiveTvRepository`, hands them to `PlaybackEngineSelector.choose()` (which actually
+  probes `.m3u8` over HTTP).
+- **`domain/usecases/play_vod_item_usecase.dart`** / **`play_series_episode_usecase.dart`** — VOD
+  and series paths: no probing, just `engineKindForContainerExtension()` on the panel-reported
+  extension.
+- **`data/probes/hls_availability_probe.dart`** — `HlsAvailabilityProbe.isAvailable(url)`, HEAD
+  request via the shared `Dio`, treats any non-2xx/3xx *or thrown exception* as "unavailable"
+  (never throws itself).
+- **`data/engines/playback_engine_selector_impl.dart`** — implements the domain selector
+  interface using the probe above. This is the one file explicitly named in the plan brief as
+  worth a dedicated unit test (`test/features/player/data/engines/playback_engine_selector_test.dart`)
+  — no real player involved, just probe-result-in → engine-choice-out.
+- **`data/engines/av_player_controller.dart`** — wraps `video_player`'s `VideoPlayerController`.
+  Exposes `videoPlayerController` getter for `chewie` to consume. `initialize()` calls
+  `scrubMessage(error.toString())` before wrapping into `PlaybackFailure` — see Security.
+- **`data/engines/mpv_player_controller.dart`** — wraps `media_kit`'s `Player`/`VideoController`.
+  Same `scrubMessage()` treatment on failure.
+- **`presentation/cubit/player_cubit.dart`** — one Cubit, three entry points
+  (`playChannel`/`playVodItem`/`playEpisode`), all funneling into a private `_resolve()` that
+  picks the engine, constructs the right controller, and emits `PlayerReady(controller,
+  isFallbackEngine, isLive)`. Disposes the active controller in its own `close()` override —
+  `get_it` never manages `PlaybackController` lifetime.
+- **`presentation/pages/player_page.dart`** — the live-TV player screen; `vod`/`series` have
+  their own thin page wrappers (`vod_player_page.dart`, `series_player_page.dart`) that all
+  delegate rendering to:
+- **`presentation/widgets/player_body.dart`** — the actual `PlayerState → Widget` switch, shared
+  by all three player pages so the engine-selection UI logic isn't triplicated.
+- **`presentation/widgets/player_chrome_video_player.dart`** / **`player_chrome_media_kit.dart`**
+  — the two engine-specific chrome widgets (see Player strategy above for why they're separate).
+- **`presentation/widgets/airplay_button.dart`** / **`fallback_engine_badge.dart`** — small
+  standalone widgets embedded in the AV chrome / shown when on the mpv fallback engine.
+
 ## Architecture — non-negotiable rules
 
 Each feature under `lib/features/<name>/` has `domain/` (entities, abstract repository
@@ -52,6 +209,53 @@ interfaces, use cases — one class per action), `data/` (remote datasource wrap
   implementations (`AvPlayerController`/`MpvPlayerController`) are never in `get_it` at all —
   `PlayerCubit` constructs them directly per playback session and disposes them in its own
   `close()`.
+
+## Adding a New Feature
+
+When adding a new feature, follow these steps strictly to maintain the Clean Architecture structure:
+
+1. **Domain Layer First:**
+   - Define entities in `domain/entities/` (plain Dart, no Flutter imports).
+   - Define abstract repository interfaces in `domain/repositories/`. Methods must return `TaskEither<Failure, T>`.
+   - Create use cases in `domain/usecases/`. Each use case should be a single class delegating to the repository.
+2. **Data Layer:**
+   - Define remote/local datasources. If talking to the Xtream panel, copy the `XtreamClientFactory` caching pattern used in existing datasources.
+   - Implement the repository interface in `data/repositories/`. Map all thrown exceptions to the `Failure` hierarchy using `TaskEither.tryCatch` and a catch-all `_toFailure` mapping function.
+3. **Presentation Layer:**
+   - Create a `Cubit` (or `Bloc` if RxDart event transformers are needed). Define sealed state classes (e.g., Initial, Loading, Loaded, Error).
+   - Ensure custom `==` and `hashCode` are implemented for states carrying data (e.g., lists, entities) so `bloc_test` can match them.
+   - Build UI pages and inject the Cubit locally using `BlocProvider(create: ...)`. Do not launch async load work from the Cubit constructor.
+4. **Dependency Injection:**
+   - Register the new feature's components in `core/di/injection.dart`: datasources and repositories as `registerLazySingleton`, use cases and Cubits as `registerFactory`.
+5. **Routing:**
+   - Add new routes to `core/router/app_router.dart`. Pass required arguments (like entities) via the `extra` parameter rather than path parameters where complex objects are involved.
+
+## State Management & Error Handling
+
+Because repositories and use cases return `TaskEither<Failure, T>`, the standard pattern in any Cubit's `load()` method is to execute the usecase, map the `Either` result, and emit the corresponding state:
+
+```dart
+Future<void> load() async {
+  emit(const MyFeatureLoading());
+  
+  final result = await _myUseCase().run();
+  
+  // Fold handles both the Left (Failure) and Right (Success) cases cleanly.
+  result.fold(
+    (failure) => emit(MyFeatureError(failure.message)),
+    (data) => emit(MyFeatureLoaded(data)),
+  );
+}
+```
+
+- **Never `try/catch` inside a Cubit.** All exceptions should be caught by the Data Layer (`repository_impl.dart`) and converted into `Failure` objects before reaching the Presentation Layer.
+- **State Equality:** Remember to implement value equality (`==` and `hashCode`) for states holding data. The easiest way is manually comparing lists using `listEquals` or overriding `==` to ensure that `bloc_test` can match states.
+
+## UI & Theming Conventions
+
+- **Do not hardcode colors or text styles.** Always use the app's standard theme context: `Theme.of(context).colorScheme.primary`, `Theme.of(context).textTheme.bodyMedium`, etc. This ensures the app fully supports Dark Mode out of the box.
+- **Avoid arbitrary padding.** Use standard padding sizes (e.g. `8.0`, `16.0`, `24.0`) so the UI spacing remains consistent.
+- **Responsive layouts:** Never assume a fixed screen width. Use `Flexible`, `Expanded`, `LayoutBuilder`, or `MediaQuery` appropriately to ensure the interface handles rotation and different device sizes gracefully.
 
 ## Player strategy
 
@@ -132,12 +336,18 @@ found.
   (`buildApiClient()`), which wires the scrubbing log interceptor and the retry interceptor.
   `grep -rn "Dio()" lib/` should only ever match that one file.
 
-## Commands
+## Commands & Makefile
+
+A `Makefile` is provided for common development tasks. Avoid running raw `flutter` commands when a `make` target exists:
 
 ```bash
-flutter analyze
-flutter test
-flutter build ios --simulator --debug   # verifies native plugin builds (media_kit, flutter_to_airplay)
+make setup          # flutter pub get
+make format         # dart format .
+make clean          # flutter clean
+make analyze        # flutter analyze
+make test           # flutter test
+make build-ios-sim  # flutter build ios --simulator --debug (verifies native plugin builds)
+make run-ios        # Opens Simulator app and runs flutter run -d simulator
 ```
 
 AirPlay-to-a-real-receiver and the mpv-fallback-triggering-on-device path cannot be verified in
