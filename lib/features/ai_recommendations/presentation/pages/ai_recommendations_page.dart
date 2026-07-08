@@ -5,6 +5,7 @@ import '../../../../core/di/injection.dart';
 import '../../../live_tv/domain/entities/live_channel.dart';
 import '../../../player/presentation/pages/player_page.dart';
 import '../../domain/entities/ai_recommendation.dart';
+import '../../domain/entities/channel_language.dart';
 import '../../domain/usecases/get_top_picks_usecase.dart';
 import '../cubit/ai_recommendations_cubit.dart';
 import '../widgets/ai_pick_tile.dart';
@@ -171,35 +172,95 @@ class _PicksListView extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    // Picks already arrive grouped by language (russian, ukrainian, polish,
+    // english); build a flat item list with a header row inserted whenever
+    // the language changes.
+    final items = <_ListItem>[];
+    ChannelLanguage? lastLanguage;
+    for (final pick in picks) {
+      if (pick.language != lastLanguage) {
+        items.add(_ListItem.header(pick.language));
+        lastLanguage = pick.language;
+      }
+      items.add(_ListItem.pick(pick));
+    }
+
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 8.0, bottom: 24.0),
-      itemCount: picks.length + 1,
+      padding: const EdgeInsets.only(top: 4.0, bottom: 24.0),
+      itemCount: items.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
+            padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 8.0),
             child: Row(
               children: [
                 Icon(Icons.auto_awesome, color: colors.primary, size: 20.0),
                 const SizedBox(width: 8.0),
                 Text(
                   '${picks.length} AI-curated picks, live right now',
-                  style: textTheme.titleSmall?.copyWith(color: colors.onSurfaceVariant),
+                  style: textTheme.titleSmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
           );
         }
-        final pick = picks[index - 1];
-        return AiPickTile(
-          pick: pick,
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => PlayerPage(
-              channel: LiveChannel(id: pick.channelId, name: pick.channelName, categoryId: 0),
+        final item = items[index - 1];
+        return switch (item) {
+          _LanguageHeader(language: final language) => _LanguageSectionHeader(language: language),
+          _PickItem(pick: final pick) => AiPickTile(
+              pick: pick,
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => PlayerPage(
+                  channel: LiveChannel(
+                    id: pick.channelId,
+                    name: pick.channelName,
+                    categoryId: 0,
+                    streamIcon: pick.channelIcon,
+                  ),
+                ),
+              )),
             ),
-          )),
-        );
+        };
       },
+    );
+  }
+}
+
+sealed class _ListItem {
+  const _ListItem();
+  const factory _ListItem.header(ChannelLanguage language) = _LanguageHeader;
+  const factory _ListItem.pick(AiRecommendation pick) = _PickItem;
+}
+
+final class _LanguageHeader extends _ListItem {
+  const _LanguageHeader(this.language);
+  final ChannelLanguage language;
+}
+
+final class _PickItem extends _ListItem {
+  const _PickItem(this.pick);
+  final AiRecommendation pick;
+}
+
+class _LanguageSectionHeader extends StatelessWidget {
+  const _LanguageSectionHeader({required this.language});
+
+  final ChannelLanguage language;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+      child: Row(
+        children: [
+          LanguageChip(language: language),
+          const SizedBox(width: 8.0),
+          Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
+        ],
+      ),
     );
   }
 }

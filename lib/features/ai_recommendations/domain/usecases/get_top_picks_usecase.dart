@@ -70,12 +70,33 @@ class GetTopPicksUseCase {
       final ranked = await _aiRepository.rankTopPicks(snapshots).run();
       final picks = ranked.getOrElse((failure) => throw failure);
       appTalker.info('GetTopPicksUseCase: OpenAI returned ${picks.length} picks');
-      return picks;
+      return _sortByLanguage(picks);
     }, (error, stackTrace) {
       final failure = _toFailure(error, stackTrace);
       appTalker.error('GetTopPicksUseCase: failed — ${failure.message}', error, stackTrace);
       return failure;
     });
+  }
+
+  static const _languageOrder = [
+    ChannelLanguage.russian,
+    ChannelLanguage.ukrainian,
+    ChannelLanguage.polish,
+    ChannelLanguage.english,
+  ];
+
+  /// Groups picks by language in [_languageOrder], keeping the AI's relative
+  /// ranking within each group, then renumbers 1..N for display.
+  List<AiRecommendation> _sortByLanguage(List<AiRecommendation> picks) {
+    final sorted = [...picks]..sort((a, b) {
+        final languageCompare =
+            _languageOrder.indexOf(a.language).compareTo(_languageOrder.indexOf(b.language));
+        if (languageCompare != 0) return languageCompare;
+        return a.rank.compareTo(b.rank);
+      });
+    return [
+      for (var i = 0; i < sorted.length; i++) sorted[i].copyWith(rank: i + 1),
+    ];
   }
 
   Map<int, Set<ChannelLanguage>> _matchCategories(List<LiveCategory> categories) {

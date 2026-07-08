@@ -27,6 +27,8 @@ void main() {
     expect(choice.kind, PlaybackEngineKind.av);
     expect(choice.source.url, m3u8Url);
     expect(choice.source.containerExtension, 'm3u8');
+    expect(choice.fallback?.url, tsUrl);
+    expect(choice.fallback?.containerExtension, 'ts');
   });
 
   test('falls back to the mpv engine with the ts source when the probe fails (404/timeout)', () async {
@@ -37,6 +39,7 @@ void main() {
     expect(choice.kind, PlaybackEngineKind.mpv);
     expect(choice.source.url, tsUrl);
     expect(choice.source.containerExtension, 'ts');
+    expect(choice.fallback, isNull);
   });
 
   test('never probes the ts URL — only m3u8 availability decides the engine', () async {

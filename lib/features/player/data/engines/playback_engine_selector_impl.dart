@@ -23,6 +23,7 @@ class PlaybackEngineSelectorImpl implements PlaybackEngineSelector {
       return PlaybackEngineChoice(
         PlaybackEngineKind.av,
         PlaybackSource(url: m3u8Url, containerExtension: 'm3u8'),
+        fallback: PlaybackSource(url: tsUrl, containerExtension: 'ts'),
       );
     }
     appTalker.info('PlaybackEngineSelector: HLS unavailable, falling back to mpv engine');

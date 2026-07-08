@@ -12,12 +12,19 @@ String scrubUrl(String url) {
   };
 
   final segments = uri.pathSegments.toList();
-  final userIndex = segments.indexWhere(
-    (segment) => segment == uri.queryParameters['username'],
-  );
+  final queryUsername = uri.queryParameters['username'];
+  final userIndex = queryUsername == null
+      ? -1
+      : segments.indexWhere((segment) => segment == queryUsername);
+  // Stream URLs (live/movie/series) embed username/password as the first
+  // two path segments with no query params at all, so the query-based
+  // lookup above finds nothing — fall back to masking segments 0 and 1,
+  // matching how every stream base URI in this app is actually built
+  // (see XtreamClient's `$username/$password` path construction).
+  final maskUserIndex = userIndex != -1 ? userIndex : (segments.length >= 2 ? 0 : -1);
   final scrubbedSegments = [
     for (var i = 0; i < segments.length; i++)
-      if (i == userIndex || i == userIndex + 1) '***' else segments[i],
+      if (i == maskUserIndex || i == maskUserIndex + 1) '***' else segments[i],
   ];
 
   return uri

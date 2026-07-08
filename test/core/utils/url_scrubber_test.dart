@@ -15,6 +15,14 @@ void main() {
       expect(scrubbed, isNot(contains('alice')));
       expect(scrubbed, isNot(contains('secret123')));
     });
+
+    test('redacts username/password path segments on stream URLs with no query params', () {
+      final scrubbed = scrubUrl('http://super8k.top/eae9612992/4b04abe27f/1562537.m3u8');
+
+      expect(scrubbed, isNot(contains('eae9612992')));
+      expect(scrubbed, isNot(contains('4b04abe27f')));
+      expect(scrubbed, 'http://super8k.top/***/***/1562537.m3u8');
+    });
   });
 
   group('scrubMessage', () {

@@ -41,12 +41,21 @@ final class PlayerError extends PlayerState {
 }
 
 class PlayerCubit extends Cubit<PlayerState> {
-  PlayerCubit(this._playChannelUseCase, this._playVodItemUseCase, this._playSeriesEpisodeUseCase)
-      : super(const PlayerLoading());
+  PlayerCubit(
+    this._playChannelUseCase,
+    this._playVodItemUseCase,
+    this._playSeriesEpisodeUseCase, {
+    PlaybackController Function() avPlayerFactory = AvPlayerController.new,
+    PlaybackController Function() mpvPlayerFactory = MpvPlayerController.new,
+  })  : _avPlayerFactory = avPlayerFactory,
+        _mpvPlayerFactory = mpvPlayerFactory,
+        super(const PlayerLoading());
 
   final PlayChannelUseCase _playChannelUseCase;
   final PlayVodItemUseCase _playVodItemUseCase;
   final PlaySeriesEpisodeUseCase _playSeriesEpisodeUseCase;
+  final PlaybackController Function() _avPlayerFactory;
+  final PlaybackController Function() _mpvPlayerFactory;
 
   Future<void> playChannel(LiveChannel channel) =>
       _resolve(_playChannelUseCase(channel), isLive: true);
@@ -64,13 +73,30 @@ class PlayerCubit extends Cubit<PlayerState> {
       (failure) async => emit(PlayerError(failure.message)),
       (choice) async {
         final controller = switch (choice.kind) {
-          PlaybackEngineKind.av => AvPlayerController(),
-          PlaybackEngineKind.mpv => MpvPlayerController(),
+          PlaybackEngineKind.av => _avPlayerFactory(),
+          PlaybackEngineKind.mpv => _mpvPlayerFactory(),
         };
         final initResult = await controller.initialize(choice.source).run();
-        initResult.fold(
-          (failure) => emit(PlayerError(failure.message)),
-          (_) => emit(PlayerReady(
+        await initResult.fold(
+          (failure) async {
+            final fallback = choice.fallback;
+            if (fallback == null) {
+              emit(PlayerError(failure.message));
+              return;
+            }
+            await controller.dispose();
+            final fallbackController = _mpvPlayerFactory();
+            final fallbackResult = await fallbackController.initialize(fallback).run();
+            fallbackResult.fold(
+              (_) => emit(PlayerError(failure.message)),
+              (_) => emit(PlayerReady(
+                fallbackController,
+                isFallbackEngine: true,
+                isLive: isLive,
+              )),
+            );
+          },
+          (_) async => emit(PlayerReady(
             controller,
             isFallbackEngine: choice.kind == PlaybackEngineKind.mpv,
             isLive: isLive,

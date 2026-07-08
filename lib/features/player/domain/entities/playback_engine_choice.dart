@@ -3,10 +3,17 @@ import 'playback_source.dart';
 enum PlaybackEngineKind { av, mpv }
 
 class PlaybackEngineChoice {
-  const PlaybackEngineChoice(this.kind, this.source);
+  const PlaybackEngineChoice(this.kind, this.source, {this.fallback});
 
   final PlaybackEngineKind kind;
   final PlaybackSource source;
+
+  /// Raw `.ts` source to retry on the mpv engine if the AV engine's
+  /// `initialize` fails despite `HlsAvailabilityProbe` reporting the
+  /// `.m3u8` as reachable (some panels 200 a HEAD without checking that the
+  /// stream is actually live). Only set for the live-channel AV path; VOD
+  /// and series have no alternate URL to fall back to.
+  final PlaybackSource? fallback;
 }
 
 /// Shared by VOD and series playback (both direct-file/already-HLS content

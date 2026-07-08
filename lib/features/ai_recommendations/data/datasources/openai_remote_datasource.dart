@@ -53,7 +53,8 @@ class OpenAiRemoteDataSource {
       'the shape {"picks": [{"rank": 1, "channelId": 123, "channelName": "...", '
       '"language": "english", "programTitle": "...", "reason": "one short sentence"}, '
       '...]} with up to 40 entries ordered by rank ascending. "language" must be one of '
-      '"english", "russian", "polish", "ukrainian".';
+      '"english", "russian", "polish", "ukrainian". The "reason" text must always be '
+      'written in Russian, regardless of the channel\'s own language.';
 
   String _buildUserPrompt(List<NowPlayingSnapshot> snapshots) {
     final buffer = StringBuffer('Currently airing:\n');
@@ -113,6 +114,7 @@ class OpenAiRemoteDataSource {
           rank: (entry['rank'] as num).toInt(),
           channelId: channelId,
           channelName: entry['channelName'] as String,
+          channelIcon: byChannelId[channelId]?.channel.streamIcon,
           language: language,
           programTitle: entry['programTitle'] as String,
           reason: entry['reason'] as String,

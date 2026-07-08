@@ -25,31 +25,25 @@ class AiPickTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _RankBadge(rank: pick.rank, highlighted: _isTopThree),
-              const SizedBox(width: 16.0),
+              const SizedBox(width: 12.0),
+              _ChannelIcon(iconUrl: pick.channelIcon),
+              const SizedBox(width: 12.0),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            pick.channelName,
-                            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8.0),
-                        _LanguageChip(language: pick.language),
-                      ],
+                    Text(
+                      pick.channelName,
+                      style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4.0),
+                    const SizedBox(height: 2.0),
                     Text(
                       pick.programTitle,
                       style: textTheme.bodyMedium?.copyWith(color: colors.primary),
@@ -67,10 +61,40 @@ class AiPickTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8.0),
-              Icon(Icons.play_circle_fill, color: colors.primary, size: 32.0),
+              Icon(Icons.play_circle_fill, color: colors.primary, size: 30.0),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ChannelIcon extends StatelessWidget {
+  const _ChannelIcon({required this.iconUrl});
+
+  final String? iconUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10.0),
+      child: Container(
+        width: 44.0,
+        height: 44.0,
+        color: colors.surfaceContainerHighest,
+        alignment: Alignment.center,
+        child: iconUrl == null || iconUrl!.isEmpty
+            ? Icon(Icons.live_tv, color: colors.onSurfaceVariant, size: 22.0)
+            : Image.network(
+                iconUrl!,
+                width: 44.0,
+                height: 44.0,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) =>
+                    Icon(Icons.live_tv, color: colors.onSurfaceVariant, size: 22.0),
+              ),
       ),
     );
   }
@@ -104,8 +128,8 @@ class _RankBadge extends StatelessWidget {
   }
 }
 
-class _LanguageChip extends StatelessWidget {
-  const _LanguageChip({required this.language});
+class LanguageChip extends StatelessWidget {
+  const LanguageChip({super.key, required this.language});
 
   final ChannelLanguage language;
 
