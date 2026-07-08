@@ -1,0 +1,528 @@
+{
+  "_comment": "Real sample responses captured 2026-07-08 from super8k.top (World8K/Strong8K Xtream panel) for offline dev reference. See dev_credentials.local.md for full creds/quirks. No auth token embedded, safe to commit.",
+  "get_live_categories_sample": [
+    {
+      "category_id": "47",
+      "category_name": "UK| GENERAL ᴴᴰ/ᴿᴬᵂ",
+      "parent_id": 0
+    },
+    {
+      "category_id": "58",
+      "category_name": "US| ENTERTAINMENT ᴴᴰ/ᴿᴬᵂ ⁶⁰ᶠᵖˢ",
+      "parent_id": 0
+    },
+    {
+      "category_id": "499",
+      "category_name": "PL| POLSKIE ᴿᴬᵂ ⱽᴵᴾ",
+      "parent_id": 0
+    },
+    {
+      "category_id": "6",
+      "category_name": "RU| RUSSIAN HD/4K",
+      "parent_id": 0
+    },
+    {
+      "category_id": "155",
+      "category_name": "UK| UKRAINE HD/4K",
+      "parent_id": 0
+    }
+  ],
+  "get_live_streams_by_category": {
+    "6": [
+      {
+        "num": 1,
+        "name": "######## SPEZIAL ########",
+        "stream_type": "live",
+        "stream_id": 439489,
+        "stream_icon": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Animated-Flag-Russia.gif",
+        "epg_channel_id": "",
+        "added": "1673957461",
+        "is_adult": 0,
+        "category_id": "6",
+        "category_ids": [
+          6
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 2,
+        "name": "RU: A1",
+        "stream_type": "live",
+        "stream_id": 439488,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/logos/A1.jpg",
+        "epg_channel_id": "А1.ru",
+        "added": "1673957461",
+        "is_adult": 0,
+        "category_id": "6",
+        "category_ids": [
+          6
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 3,
+        "name": "RU: A2",
+        "stream_type": "live",
+        "stream_id": 439487,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/logos/A2.jpg",
+        "epg_channel_id": "А2.ru",
+        "added": "1673957461",
+        "is_adult": 0,
+        "category_id": "6",
+        "category_ids": [
+          6
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 4,
+        "name": "RU: AMC",
+        "stream_type": "live",
+        "stream_id": 439486,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/logos/amc.png",
+        "epg_channel_id": "",
+        "added": "1673957461",
+        "is_adult": 0,
+        "category_id": "6",
+        "category_ids": [
+          6
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 5,
+        "name": "RU: AMEDIA",
+        "stream_type": "live",
+        "stream_id": 439485,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/logos/AMEDIA.png",
+        "epg_channel_id": "",
+        "added": "1673957461",
+        "is_adult": 0,
+        "category_id": "6",
+        "category_ids": [
+          6
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 6,
+        "name": "RU: AMEDIA 2",
+        "stream_type": "live",
+        "stream_id": 439484,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/logos/amedia2.png",
+        "epg_channel_id": "",
+        "added": "1673957461",
+        "is_adult": 0,
+        "category_id": "6",
+        "category_ids": [
+          6
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      }
+    ],
+    "155": [
+      {
+        "num": 1,
+        "name": "#### UKRAINE HD/4K  ####",
+        "stream_type": "live",
+        "stream_id": 1573400,
+        "stream_icon": "https://upload.wikimedia.org/wikipedia/commons/4/47/Ukraine_animated_flag.gif",
+        "epg_channel_id": "",
+        "added": "1759171782",
+        "is_adult": 0,
+        "category_id": "155",
+        "category_ids": [
+          155
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 2,
+        "name": "UA: 1PLUS1",
+        "stream_type": "live",
+        "stream_id": 441643,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/logos/1plus1.png",
+        "epg_channel_id": "",
+        "added": "1674078652",
+        "is_adult": 0,
+        "category_id": "155",
+        "category_ids": [
+          155
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 3,
+        "name": "UA: 1PLUS1 INTERNATIONAL",
+        "stream_type": "live",
+        "stream_id": 441642,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/logos/1plus1international.png",
+        "epg_channel_id": "",
+        "added": "1674078652",
+        "is_adult": 0,
+        "category_id": "155",
+        "category_ids": [
+          155
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 4,
+        "name": "UA: 2 2",
+        "stream_type": "live",
+        "stream_id": 441641,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/logos/2-2.png",
+        "epg_channel_id": "",
+        "added": "1674078652",
+        "is_adult": 0,
+        "category_id": "155",
+        "category_ids": [
+          155
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 5,
+        "name": "UA: 2PLUS2",
+        "stream_type": "live",
+        "stream_id": 441640,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/logos/2plus2.png",
+        "epg_channel_id": "",
+        "added": "1674078652",
+        "is_adult": 0,
+        "category_id": "155",
+        "category_ids": [
+          155
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 6,
+        "name": "UA: 5KANAL UKRAINA",
+        "stream_type": "live",
+        "stream_id": 441639,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/logos/5kanal.png",
+        "epg_channel_id": "",
+        "added": "1674078652",
+        "is_adult": 0,
+        "category_id": "155",
+        "category_ids": [
+          155
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      }
+    ],
+    "499": [
+      {
+        "num": 1,
+        "name": "##### POLSKIE ᴿᴬᵂ ⱽᴵᴾ #####",
+        "stream_type": "live",
+        "stream_id": 332351,
+        "stream_icon": "https://upload.wikimedia.org/wikipedia/commons/b/b5/Animated-Flag-Poland.gif",
+        "epg_channel_id": "",
+        "added": "1645911944",
+        "is_adult": 0,
+        "category_id": "499",
+        "category_ids": [
+          499
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 2,
+        "name": "PL VIP: TVP 1 ᴿᴬᵂ",
+        "stream_type": "live",
+        "stream_id": 345657,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/misc/logos/320/9818.jpg?77096",
+        "epg_channel_id": "",
+        "added": "1650036955",
+        "is_adult": 0,
+        "category_id": "499",
+        "category_ids": [
+          499
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 3,
+        "name": "PL VIP: TVP 2 ᴿᴬᵂ",
+        "stream_type": "live",
+        "stream_id": 345656,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/misc/logos/320/9816.jpg?35353",
+        "epg_channel_id": "",
+        "added": "1650036955",
+        "is_adult": 0,
+        "category_id": "499",
+        "category_ids": [
+          499
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 4,
+        "name": "PL VIP:TVP 3 ᴿᴬᵂ",
+        "stream_type": "live",
+        "stream_id": 345655,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/misc/logos/320/9814.jpg?5701",
+        "epg_channel_id": "",
+        "added": "1650036955",
+        "is_adult": 0,
+        "category_id": "499",
+        "category_ids": [
+          499
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 5,
+        "name": "PL VIP: TVP ABC ᴿᴬᵂ",
+        "stream_type": "live",
+        "stream_id": 345654,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/misc/logos/320/9813.jpg?8350",
+        "epg_channel_id": "",
+        "added": "1650036955",
+        "is_adult": 0,
+        "category_id": "499",
+        "category_ids": [
+          499
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 6,
+        "name": "PL VIP: TVP ᴿᴬᵂ",
+        "stream_type": "live",
+        "stream_id": 345653,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/misc/logos/320/9812.jpg?79842",
+        "epg_channel_id": "",
+        "added": "1650036954",
+        "is_adult": 0,
+        "category_id": "499",
+        "category_ids": [
+          499
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      }
+    ],
+    "47": [
+      {
+        "num": 1,
+        "name": "#### GENERAL HD/4K ####",
+        "stream_type": "live",
+        "stream_id": 1015349,
+        "stream_icon": "https://upload.wikimedia.org/wikipedia/commons/2/2d/Animated-Flag-United-Kingdom.gif",
+        "epg_channel_id": "",
+        "added": "1725310955",
+        "is_adult": 0,
+        "category_id": "47",
+        "category_ids": [
+          47
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 2,
+        "name": "UK: 8K: beIN SP⚽RTS MAX 5 EN ᴴᴰ (WORLD CUP)",
+        "stream_type": "live",
+        "stream_id": 2035989,
+        "stream_icon": "https://photo-tmdb.com/stalker_portal/misc/logos/320/15192.png?37175",
+        "epg_channel_id": "",
+        "added": "1781726837",
+        "is_adult": 0,
+        "category_id": "47",
+        "category_ids": [
+          47
+        ],
+        "custom_sid": null,
+        "tv_archive": 0,
+        "direct_source": "",
+        "tv_archive_duration": 0
+      },
+      {
+        "num": 3,
+        "name": "UK: BBC ONE LONDON 4K ◉",
+        "stream_type": "live",
+        "stream_id": 497001,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/misc/logos/320/11987.jpg?90172",
+        "epg_channel_id": "BBCOneOxford.uk",
+        "added": "1688069645",
+        "is_adult": 0,
+        "category_id": "47",
+        "category_ids": [
+          47
+        ],
+        "custom_sid": null,
+        "tv_archive": 1,
+        "direct_source": "",
+        "tv_archive_duration": "3"
+      },
+      {
+        "num": 4,
+        "name": "UK: BBC 1 HD ◉",
+        "stream_type": "live",
+        "stream_id": 162096,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/misc/logos/320/12016.jpg?38263",
+        "epg_channel_id": "bbc1.uk",
+        "added": "1591733478",
+        "is_adult": 0,
+        "category_id": "47",
+        "category_ids": [
+          47
+        ],
+        "custom_sid": null,
+        "tv_archive": 1,
+        "direct_source": "",
+        "tv_archive_duration": "3"
+      },
+      {
+        "num": 5,
+        "name": "UK: BBC 2 HD ◉",
+        "stream_type": "live",
+        "stream_id": 162098,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/misc/logos/320/12017.jpg?20708",
+        "epg_channel_id": "BBC2.uk",
+        "added": "1591733478",
+        "is_adult": 0,
+        "category_id": "47",
+        "category_ids": [
+          47
+        ],
+        "custom_sid": null,
+        "tv_archive": 1,
+        "direct_source": "",
+        "tv_archive_duration": "3"
+      },
+      {
+        "num": 6,
+        "name": "UK: BBC 3 / CBBC HD ◉",
+        "stream_type": "live",
+        "stream_id": 162100,
+        "stream_icon": "http://photo-tmdb.com/stalker_portal/misc/logos/320/12033.jpg?67015",
+        "epg_channel_id": "TS",
+        "added": "1591733478",
+        "is_adult": 0,
+        "category_id": "47",
+        "category_ids": [
+          47
+        ],
+        "custom_sid": null,
+        "tv_archive": 1,
+        "direct_source": "",
+        "tv_archive_duration": "3"
+      }
+    ]
+  },
+  "get_short_epg_sample_stream_162096": {
+    "epg_listings": [
+      {
+        "id": "1418983",
+        "epg_id": "102",
+        "title": "QkJDIE5ld3MgYXQgVGVu",
+        "lang": "en",
+        "start": "2026-07-08 23:00:00",
+        "end": "2026-07-08 23:30:00",
+        "description": "VGhlIGxhdGVzdCBuYXRpb25hbCBhbmQgaW50ZXJuYXRpb25hbCBuZXdzLCB3aXRoIHJlcG9ydHMgZnJvbSBCQkMgY29ycmVzcG9uZGVudHMgd29ybGR3aWRlLg==",
+        "channel_id": "bbc1.uk",
+        "start_timestamp": "1783551600",
+        "stop_timestamp": "1783553400",
+        "stream_id": "162096"
+      },
+      {
+        "id": "1418984",
+        "epg_id": "102",
+        "title": "QkJDIExvbmRvbiBOZXdz",
+        "lang": "en",
+        "start": "2026-07-08 23:30:00",
+        "end": "2026-07-08 23:40:00",
+        "description": "TmV3cywgc3BvcnQgYW5kIHdlYXRoZXIgZnJvbSBMb25kb24u",
+        "channel_id": "bbc1.uk",
+        "start_timestamp": "1783553400",
+        "stop_timestamp": "1783554000",
+        "stream_id": "162096"
+      },
+      {
+        "id": "1418985",
+        "epg_id": "102",
+        "title": "V2FyIG9mIHRoZSBXb3JsZHMgKDIwMDUp",
+        "lang": "en",
+        "start": "2026-07-08 23:40:00",
+        "end": "2026-07-09 01:25:00",
+        "description": "V2hlbiBtZXJjaWxlc3MgYWxpZW5zIGF0dGFjayB0aGUgRWFydGgsIGEgZG9jayB3b3JrZXIgZmlnaHRzIHRvIGdldCBoaXMgY2hpbGRyZW4gdG8gc2FmZXR5LiBBcyB0aGV5IGZpbmQgdGhlbXNlbHZlcyBiZWluZyBjaGFzZWQgYnkgMTAwLWZlZXQtaGlnaCB0cmlwb2RzIHRocm91Z2ggdGhlIHN0cmVldHMgb2YgTmV3IFlvcmssIHRoZSBhbGllbiB2ZXNzZWxzIHN0YXJ0IHRvIG9wZW4gZmlyZSBvbiB0aGUgcmV0cmVhdGluZyBjcm93ZCwgaW5jaW5lcmF0aW5nIGV2ZXJ5dGhpbmcgdGhhdCBnZXRzIGluIHRoZSB3YXkuIEJhc2VkIG9uIEhHIFdlbGxzJ3MgY2xhc3NpYyBub3ZlbC4=",
+        "channel_id": "bbc1.uk",
+        "start_timestamp": "1783554000",
+        "stop_timestamp": "1783560300",
+        "stream_id": "162096"
+      },
+      {
+        "id": "2114899",
+        "epg_id": "102",
+        "title": "V2VhdGhlciBmb3IgdGhlIFdlZWsgQWhlYWQ=",
+        "lang": "en",
+        "start": "2026-07-09 01:25:00",
+        "end": "2026-07-09 01:30:00",
+        "description": "RGV0YWlsZWQgd2VhdGhlciBmb3JlY2FzdC4=",
+        "channel_id": "bbc1.uk",
+        "start_timestamp": "1783560300",
+        "stop_timestamp": "1783560600",
+        "stream_id": "162096"
+      }
+    ]
+  }
+}

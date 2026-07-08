@@ -27,3 +27,7 @@ final class PlaybackFailure extends Failure {
 final class UnknownFailure extends Failure {
   const UnknownFailure(super.message);
 }
+
+final class AiFailure extends Failure {
+  const AiFailure(super.message);
+}
