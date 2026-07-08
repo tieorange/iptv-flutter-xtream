@@ -17,8 +17,8 @@ started.
 `go_router` · `fpdart` (`TaskEither`/`Either`) · `xtream_code_client` v2 (Xtream API) ·
 `video_player`+`chewie` (AVPlayer engine) · `media_kit`+`media_kit_video` (mpv fallback engine) ·
 `flutter_to_airplay` · `flutter_secure_storage` (credentials) · `shared_preferences`
-(favorites — not sensitive) · `dio`+`dio_smart_retry` (HLS probe only) · `rxdart` (search
-debounce) · `bloc_test`+`mocktail` (tests).
+(favorites — not sensitive) · `dio`+`dio_smart_retry` (HLS probe only, plus the OpenAI client for
+`ai_recommendations`) · `rxdart` (search debounce) · `bloc_test`+`mocktail` (tests).
 
 ## Repo map — `lib/` folder by folder
 
@@ -26,6 +26,7 @@ debounce) · `bloc_test`+`mocktail` (tests).
 lib/
   main.dart
   core/
+    config/env.dart
     di/injection.dart
     error/failures.dart
     network/{api_client,retry_interceptor,scrubbing_log_interceptor,xtream_client_factory}.dart
@@ -33,7 +34,7 @@ lib/
     storage/{secure_storage,profile_local_store}.dart
     utils/url_scrubber.dart
   features/
-    auth/  live_tv/  player/  vod/  series/  epg/  favorites/  search/
+    auth/  live_tv/  player/  vod/  series/  epg/  favorites/  search/  ai_recommendations/
 ```
 
 ### `lib/main.dart`
@@ -53,14 +54,22 @@ is created locally per-page via `BlocProvider(create: ...)`, not here.
   add its registrations here, grouped with a comment, roughly in dependency order (a repository's
   registration must be able to resolve its own datasource dependency, but `get_it` factory
   closures resolve lazily so strict ordering only matters for readability, not correctness).
+- **`config/env.dart`** — build-time config read via `String.fromEnvironment`, e.g.
+  `Env.openAiApiKey` / `Env.hasOpenAiApiKey`. Supplied with `--dart-define-from-file` (see
+  `dart_define.example.json` at the repo root, and `dart_define.local.json` — gitignored, holds
+  the real key). Never hardcode a real secret in this file or anywhere else in `lib/`.
 - **`error/failures.dart`** — the sealed `Failure` hierarchy every repository returns instead of
   throwing: `NetworkFailure`, `AuthFailure`, `ParseFailure`, `CacheFailure`, `PlaybackFailure`,
-  `UnknownFailure`. Add a new subtype here if a genuinely new failure mode shows up; don't
+  `UnknownFailure`, `AiFailure` (OpenAI-specific errors — missing key, 401/429, timeout,
+  malformed response). Add a new subtype here if a genuinely new failure mode shows up; don't
   stringly-type errors elsewhere.
-- **`network/api_client.dart`** — `buildApiClient()` builds the *one* shared `Dio` instance
-  (registered as a singleton in `injection.dart`). Currently its only real consumer is
-  `HlsAvailabilityProbe`; the Xtream API calls themselves go through `xtream_code_client`'s own
-  internal `http.Client`, not this `Dio`.
+- **`network/api_client.dart`** — `buildApiClient()` builds the *one* shared plain `Dio` instance
+  (registered as a singleton in `injection.dart`); its only real consumer is
+  `HlsAvailabilityProbe`. The Xtream API calls themselves go through `xtream_code_client`'s own
+  internal `http.Client`, not this `Dio`. The same file also has `buildOpenAiApiClient()` — a
+  second, separately-configured `Dio` (OpenAI base URL, bearer auth header from `Env`, longer
+  timeouts) registered under `instanceName: 'openAiDio'` in `injection.dart`, used only by
+  `ai_recommendations`'s `OpenAiRemoteDataSource`.
 - **`network/retry_interceptor.dart`** — thin wrapper around `dio_smart_retry`'s defaults
   (retries timeouts/connection errors/5xx/408/429 with backoff, never 4xx). Don't write a custom
   retry evaluator unless the defaults are proven wrong for a specific panel.
@@ -87,7 +96,10 @@ is created locally per-page via `BlocProvider(create: ...)`, not here.
   `GoRouter.of(context).refresh()` manually from inside a Cubit; this listenable already does it.
 - **`router/home_shell.dart`** — the authenticated `/home/*` bottom-nav shell
   (`StatefulShellRoute.indexedStack` wrapper: Live / VOD / Series / Search / Favorites tabs, each
-  keeping its own navigation stack). Has the logout button in its `AppBar`.
+  keeping its own navigation stack). Its `AppBar` has two actions: a sparkle icon
+  (`Icons.auto_awesome`) that pushes the `aiPicks` route (`ai_recommendations` feature — not a
+  6th bottom-nav tab, 5 is already the practical UX cap for `NavigationBar`), and the logout
+  button.
 - **`storage/secure_storage.dart`** — thin `FlutterSecureStorage` wrapper (Keychain-backed).
   Everything that touches a profile's username/password goes through this. Never subclass
   `FlutterSecureStorage` directly elsewhere — go through this wrapper so tests can swap it for an
@@ -127,6 +139,7 @@ couple of specifics differ:
 | `epg` | `EpgProgram` | `EpgRepository` | Single use case (`GetNowNextUseCase`). `NowNextStrip` (presentation/widgets) is the only consumer, self-contained (creates its own `BlocProvider` inline wherever it's dropped) and silently renders nothing on any non-`Loaded` state — EPG is supplementary, never blocking. |
 | `favorites` | `FavoriteItem` (+ `FavoriteItemType` enum: live/vod/series) | `FavoritesRepository` | Backed by `shared_preferences`, not `SecureStorage` (not sensitive), keyed per `profileId`. `FavoriteButton` (presentation/widgets) is the same self-contained pattern as `NowNextStrip` — drop it anywhere with a `FavoriteItem`, it manages its own load/toggle state. |
 | `search` | `SearchResult` (+ `SearchResultType` enum) | *(none — depends directly on `LiveTvRepository`/`VodRepository`/`SeriesRepository`)* | The one feature using a full `Bloc` (`SearchBloc`) instead of a `Cubit`, because it needs `rxdart`'s `debounceTime`+`switchMap` event transformer on `SearchQueryChanged`. `SearchAllUseCase` (domain, but depends on the *other three features'* repository interfaces — an accepted cross-feature domain dependency) caches the flat `getAllChannels()`/`getAllItems()`/`getAllSeries()` results in memory for the app session; only the *first* search per session hits the network. |
+| `ai_recommendations` | `ChannelLanguage` (+ `matchCategoryLanguages()`), `NowPlayingSnapshot`, `AiRecommendation` | `AiRecommendationsRepository` (only wraps the OpenAI call itself) | "Top 40 Now" — see its own section below. `GetTopPicksUseCase` is the second usecase (after `SearchAllUseCase`) that composes across other features' repositories (`LiveTvRepository` + `EpgRepository`) directly instead of being a thin one-repository delegate. |
 
 ### `lib/features/player/` — shared by live/VOD/series, worth its own map
 
@@ -176,6 +189,40 @@ This feature has no "list/detail" pages of its own — it's pure playback plumbi
   — the two engine-specific chrome widgets (see Player strategy above for why they're separate).
 - **`presentation/widgets/airplay_button.dart`** / **`fallback_engine_badge.dart`** — small
   standalone widgets embedded in the AV chrome / shown when on the mpv fallback engine.
+
+## `lib/features/ai_recommendations/` — "Top 40 Now" AI picks
+
+Fetches now-playing EPG for channels in English/Russian/Polish/Ukrainian categories, sends a
+compact summary to OpenAI's Chat Completions API, and shows the ranked top 40. Entry point:
+the sparkle icon in `home_shell.dart`'s `AppBar` → `/ai-picks` route.
+
+- **`domain/entities/channel_language.dart`** — `ChannelLanguage` enum +
+  `matchCategoryLanguages(String categoryName)`, a pure heuristic keyword matcher (no Flutter/
+  package imports, easily unit-testable). There is no language taxonomy in the Xtream API —
+  categories are opaque provider-named strings. Deliberately does **not** match bare
+  country-code tokens like `"uk"`/`"us"` — see the real-panel gotcha below for why that's
+  unreliable, not just theoretically risky.
+- **`domain/entities/now_playing_snapshot.dart`** — `{ LiveChannel, ChannelLanguage,
+  EpgProgram }`, a cross-feature domain entity (same accepted pattern as `search`'s
+  `SearchResult`).
+- **`domain/usecases/get_top_picks_usecase.dart`** — the orchestration: match categories → one
+  `getAllChannels()` call (not per-category) → sample up to 120 channels per language → fetch
+  `EpgRepository.getNowNext()` in concurrency-8 batches with a 6s per-channel timeout (one slow/
+  failing channel never fails the batch — caught and skipped) → if zero snapshots were gathered,
+  fail with a specific message (covers the "provider's EPG surface is down" case, see gotcha
+  below) rather than calling OpenAI with nothing → delegate ranking to
+  `AiRecommendationsRepository`.
+- **`data/datasources/openai_remote_datasource.dart`** — POSTs to `/chat/completions` (model
+  `gpt-4o`, `response_format: json_object`) via the `openAiDio` named instance, parses `{"picks":
+  [...]}` defensively (a malformed individual entry is dropped, not fatal), maps 401/429/timeout
+  to `AiFailure`. Also base64-decodes EPG title/description defensively before building the
+  prompt — see gotcha below.
+- **`presentation/`** — `AiRecommendationsCubit` (Loading/Loaded/Error, no async work in the
+  constructor), `AiRecommendationsPage` (BlocProvider + refresh action, Loading state explains
+  the ~30s wait), `AiPickTile` (rank badge, language chip, reason).
+- No dedicated `openai_remote_datasource_test.dart`/`get_top_picks_usecase_test.dart` exist yet —
+  add them (mocktail-mocked `Dio`/repositories) before relying on this feature in CI. All non-
+  player tests are currently `@Skip`-disabled anyway, see Testing below.
 
 ## Architecture — non-negotiable rules
 
@@ -273,6 +320,15 @@ in `player_body.dart` by the runtime type of `PlayerReady.controller`.
 
 ## Testing
 
+- **All tests except the `player` feature's three files are currently `@Skip`-disabled**
+  (library-level `@Skip('Temporarily disabled during AI-picks feature work; re-enable at
+  project end. See AGENTS.md.')` at the top of each file) — a deliberate, temporary decision
+  while `ai_recommendations` is being built, not a regression. Only
+  `test/features/player/data/engines/playback_engine_selector_test.dart`,
+  `test/features/player/domain/play_series_episode_usecase_test.dart`, and
+  `play_vod_item_usecase_test.dart` still run. Re-enable everything else (delete the `@Skip`
+  line from each file) once the project's test suite is revisited — don't add more `@Skip`s to
+  new code without being asked; this was a one-time, explicit user decision, not a pattern.
 - `flutter analyze` and `flutter test` must both be clean before calling any milestone done.
 - Widget tests that touch `flutter_secure_storage` need `getIt.unregister<SecureStorage>()` +
   an in-memory fake registered in its place — the real plugin's platform channel has no handler
@@ -316,6 +372,26 @@ found.
   on (`getAllChannels()`/`getAllItems()`/`getAllSeries()`) instead of iterating every category.
   First search costs ~2.5s on a panel with ~1000 live channels; results are cached in-memory in
   `SearchAllUseCase` for the rest of the session.
+- **`get_short_epg` `title`/`description` can be base64-encoded** (confirmed on the World8K/
+  Strong8K dev panel, e.g. `"QkJDIE5ld3MgYXQgVGVu"` → `"BBC News at Ten"`) — `xtream_code_client`
+  does **not** auto-decode this, `EpgRemoteDataSource.getNowNext()` passes it through as-is.
+  `ai_recommendations`'s `OpenAiRemoteDataSource` decodes defensively (try base64, fall back to
+  the raw string on failure) before building its prompt; if you add another EPG text consumer,
+  do the same rather than assuming plain text.
+- **Category naming can't be trusted as a reliable per-provider language taxonomy.** On the same
+  dev panel, category names follow a `"XX| Name"` prefix convention, but `"UK|"` is overloaded —
+  almost all `UK|`-prefixed categories are British, but one, `"UK| UKRAINE HD/4K"`, is Ukrainian
+  (its channels are internally named `"UA: ..."`). Separately, several Arabic categories are
+  named e.g. `"AR| MBC +6H USA"` (Arabic content, just timezone-shifted for a US audience) — a
+  naive substring match on `"usa"` would misclassify them as English. `matchCategoryLanguages()`
+  in `ai_recommendations` deliberately matches only explicit, unambiguous whole-word language
+  terms (`"russian"`, `"ukraine"`, `"polish"`, etc.) and never bare 2-letter country-code tokens
+  for exactly this reason. See `dev_credentials.local.md` for the full account and more quirks.
+- Some panels return **HTTP 403 for `get_short_epg` on every channel**, panel-wide (see the
+  entry above this one for the general case) — if that's true for the account in use,
+  `ai_recommendations`'s `GetTopPicksUseCase` will gather zero snapshots and surface a specific
+  "no now-playing data available" error rather than calling OpenAI with nothing; this is
+  expected provider behavior, not a bug in the use case.
 
 ## Security
 
@@ -333,8 +409,13 @@ found.
   package's redaction and would otherwise leak the credentialed stream URL straight onto the
   error screen.
 - Never construct a bare `Dio()` — always go through `core/network/api_client.dart`
-  (`buildApiClient()`), which wires the scrubbing log interceptor and the retry interceptor.
-  `grep -rn "Dio()" lib/` should only ever match that one file.
+  (`buildApiClient()` or `buildOpenAiApiClient()`), which wires the scrubbing log interceptor and
+  the retry interceptor. `grep -rn "Dio()" lib/` should only ever match that one file.
+- The OpenAI API key is build-time-only config (`core/config/env.dart`, `Env.openAiApiKey`),
+  never stored on-device or in code — see `dart_define.example.json` (committed placeholder) vs
+  `dart_define.local.json` (gitignored, real key). `dev_credentials.local.md` at the repo root
+  (also gitignored) holds a real Xtream dev account for manual panel testing — never read either
+  file's contents into a commit, a log, or an error message shown on-screen.
 
 ## Commands & Makefile
 
@@ -346,9 +427,14 @@ make format         # dart format .
 make clean          # flutter clean
 make analyze        # flutter analyze
 make test           # flutter test
-make build-ios-sim  # flutter build ios --simulator --debug (verifies native plugin builds)
-make run-ios        # Opens Simulator app and runs flutter run -d simulator
+make build-ios-sim  # flutter build ios --simulator --debug --dart-define-from-file=... (verifies native plugin builds)
+make run-ios        # Opens Simulator app and runs flutter run -d simulator --dart-define-from-file=...
 ```
+
+`build-ios-sim`/`run-ios` pass `--dart-define-from-file=dart_define.local.json` if that gitignored
+file exists, else fall back to the committed `dart_define.example.json` placeholder — so the app
+always builds, with the AI picks feature just showing a "not configured" state when no real
+OpenAI key is present.
 
 AirPlay-to-a-real-receiver and the mpv-fallback-triggering-on-device path cannot be verified in
 CI/simulator — the simulator has no real AirPlay routes and `media_kit` needs the actual app

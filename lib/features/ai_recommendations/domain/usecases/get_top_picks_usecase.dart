@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/config/env.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/logging/app_talker.dart';
 import '../../../epg/domain/repositories/epg_repository.dart';
 import '../../../live_tv/domain/entities/live_category.dart';
 import '../../../live_tv/domain/entities/live_channel.dart';
@@ -31,26 +32,29 @@ class GetTopPicksUseCase {
 
   TaskEither<Failure, List<AiRecommendation>> call() {
     return TaskEither.tryCatch(() async {
+      appTalker.info('GetTopPicksUseCase: starting');
       if (!Env.hasOpenAiApiKey) {
         throw const AiFailure(
           'OpenAI API key is not configured for this build. See dart_define.example.json.',
         );
       }
 
-      final categories = await _liveTvRepository.getCategories().getOrElse(
-            (failure) => throw failure,
-          )();
+      final categoriesEither = await _liveTvRepository.getCategories().run();
+      final categories = categoriesEither.getOrElse((failure) => throw failure);
       final languagesByCategory = _matchCategories(categories);
       if (languagesByCategory.isEmpty) {
         throw const AiFailure(
           'No English, Russian, Polish, or Ukrainian categories found on this provider.',
         );
       }
+      appTalker.info(
+        'GetTopPicksUseCase: matched ${languagesByCategory.length} language categories',
+      );
 
-      final allChannels = await _liveTvRepository.getAllChannels().getOrElse(
-            (failure) => throw failure,
-          )();
+      final allChannelsEither = await _liveTvRepository.getAllChannels().run();
+      final allChannels = allChannelsEither.getOrElse((failure) => throw failure);
       final sampled = _sampleByLanguage(allChannels, languagesByCategory);
+      appTalker.info('GetTopPicksUseCase: sampled ${sampled.length} channels');
 
       final snapshots = await _gatherNowPlaying(sampled);
       if (snapshots.isEmpty) {
@@ -58,9 +62,20 @@ class GetTopPicksUseCase {
           'No now-playing data available from your provider right now.',
         );
       }
+      appTalker.info(
+        'GetTopPicksUseCase: gathered ${snapshots.length} now-playing snapshots, '
+        'calling OpenAI',
+      );
 
-      return _aiRepository.rankTopPicks(snapshots).getOrElse((failure) => throw failure)();
-    }, _toFailure);
+      final ranked = await _aiRepository.rankTopPicks(snapshots).run();
+      final picks = ranked.getOrElse((failure) => throw failure);
+      appTalker.info('GetTopPicksUseCase: OpenAI returned ${picks.length} picks');
+      return picks;
+    }, (error, stackTrace) {
+      final failure = _toFailure(error, stackTrace);
+      appTalker.error('GetTopPicksUseCase: failed — ${failure.message}', error, stackTrace);
+      return failure;
+    });
   }
 
   Map<int, Set<ChannelLanguage>> _matchCategories(List<LiveCategory> categories) {
@@ -106,10 +121,8 @@ class GetTopPicksUseCase {
 
   Future<NowPlayingSnapshot?> _fetchOne(_LanguageChannel entry) async {
     try {
-      final programs = await _epgRepository
-          .getNowNext(entry.channel.id)
-          .getOrElse((failure) => throw failure)()
-          .timeout(_epgTimeout);
+      final either = await _epgRepository.getNowNext(entry.channel.id).run().timeout(_epgTimeout);
+      final programs = either.getOrElse((failure) => throw failure);
       if (programs.isEmpty) return null;
       return NowPlayingSnapshot(
         channel: entry.channel,

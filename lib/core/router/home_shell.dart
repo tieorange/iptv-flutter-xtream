@@ -19,6 +19,11 @@ class HomeShell extends StatelessWidget {
         title: const Text('IPTV'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.auto_awesome),
+            tooltip: 'Top 40 Now',
+            onPressed: () => context.pushNamed('aiPicks'),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => context.read<AuthCubit>().logout(),
           ),

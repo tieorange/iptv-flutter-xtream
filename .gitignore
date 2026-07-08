@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local config / credentials (never commit)
+dev_credentials.local.md
+dart_define.local.json

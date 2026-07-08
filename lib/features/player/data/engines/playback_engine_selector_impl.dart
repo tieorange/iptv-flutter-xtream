@@ -1,3 +1,4 @@
+import '../../../../core/logging/app_talker.dart';
 import '../../domain/entities/playback_engine_choice.dart';
 import '../../domain/entities/playback_source.dart';
 import '../../domain/repositories/playback_engine_selector.dart';
@@ -18,11 +19,13 @@ class PlaybackEngineSelectorImpl implements PlaybackEngineSelector {
   }) async {
     final hlsAvailable = await _probe.isAvailable(m3u8Url);
     if (hlsAvailable) {
+      appTalker.info('PlaybackEngineSelector: HLS available, choosing AV engine');
       return PlaybackEngineChoice(
         PlaybackEngineKind.av,
         PlaybackSource(url: m3u8Url, containerExtension: 'm3u8'),
       );
     }
+    appTalker.info('PlaybackEngineSelector: HLS unavailable, falling back to mpv engine');
     return PlaybackEngineChoice(
       PlaybackEngineKind.mpv,
       PlaybackSource(url: tsUrl, containerExtension: 'ts'),

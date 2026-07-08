@@ -1,11 +1,17 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:talker/talker.dart';
 
+import '../logging/app_talker.dart';
 import '../network/api_client.dart';
 import '../network/xtream_client_factory.dart';
 import '../router/auth_refresh_listenable.dart';
 import '../storage/profile_local_store.dart';
 import '../storage/secure_storage.dart';
+import '../../features/ai_recommendations/data/datasources/openai_remote_datasource.dart';
+import '../../features/ai_recommendations/data/repositories/ai_recommendations_repository_impl.dart';
+import '../../features/ai_recommendations/domain/repositories/ai_recommendations_repository.dart';
+import '../../features/ai_recommendations/domain/usecases/get_top_picks_usecase.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -59,7 +65,8 @@ final getIt = GetIt.instance;
 /// Cubit the router bridge depends on), then feature modules as they're
 /// added in later milestones.
 void configureDependencies() {
-  getIt.registerLazySingleton<Dio>(() => buildApiClient());
+  getIt.registerLazySingleton<Talker>(() => appTalker);
+  getIt.registerLazySingleton<Dio>(() => buildApiClient(getIt()));
   getIt.registerLazySingleton<SecureStorage>(() => SecureStorage());
   getIt.registerLazySingleton<ProfileLocalStore>(
     () => ProfileLocalStore(getIt()),
@@ -144,4 +151,17 @@ void configureDependencies() {
   // Singleton: caches the flat live/VOD/series lists in memory for the
   // session so repeated searches don't re-fetch thousands of items.
   getIt.registerLazySingleton(() => SearchAllUseCase(getIt(), getIt(), getIt()));
+
+  // "Top 40 Now" AI picks — depends on LiveTvRepository/EpgRepository above.
+  getIt.registerLazySingleton<Dio>(
+    () => buildOpenAiApiClient(getIt()),
+    instanceName: 'openAiDio',
+  );
+  getIt.registerLazySingleton<OpenAiRemoteDataSource>(
+    () => OpenAiRemoteDataSource(getIt(instanceName: 'openAiDio')),
+  );
+  getIt.registerLazySingleton<AiRecommendationsRepository>(
+    () => AiRecommendationsRepositoryImpl(getIt()),
+  );
+  getIt.registerFactory(() => GetTopPicksUseCase(getIt(), getIt(), getIt()));
 }

@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/logging/app_talker.dart';
 import '../../../../core/utils/url_scrubber.dart';
 import '../../domain/entities/playback_source.dart';
 import '../../domain/repositories/playback_controller.dart';
@@ -23,6 +23,7 @@ class AvPlayerController implements PlaybackController {
 
   @override
   TaskEither<PlaybackFailure, Unit> initialize(PlaybackSource source) {
+    appTalker.info('AvPlayerController: opening ${scrubMessage(source.url)}');
     return TaskEither.tryCatch(
       () async {
         final controller = VideoPlayerController.networkUrl(Uri.parse(source.url));
@@ -32,8 +33,11 @@ class AvPlayerController implements PlaybackController {
         return unit;
       },
       (error, stackTrace) {
-        debugPrint('AvPlayerController initialization failed: $error');
-        debugPrint('Stack trace: $stackTrace');
+        appTalker.error(
+          'AvPlayerController initialization failed: ${scrubMessage(error.toString())}',
+          error,
+          stackTrace,
+        );
         return PlaybackFailure(scrubMessage(error.toString()));
       },
     );

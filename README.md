@@ -61,6 +61,20 @@ Built for scale, maintainability, and testing using strict **Clean Architecture*
    ```
    > **Note:** For iOS, you can also use `make run-ios` if you want to quickly deploy to the simulator. Testing AirPlay requires a physical device.
 
+### "Top 40 Now" AI picks setup (optional)
+
+This feature ranks live channels via the OpenAI API and needs a key supplied at build time —
+never committed to the repo:
+
+```bash
+cp dart_define.example.json dart_define.local.json
+# then edit dart_define.local.json and paste in your real OPENAI_API_KEY
+make run-ios   # or: flutter run --dart-define-from-file=dart_define.local.json
+```
+
+Without a configured key, the rest of the app works normally — the AI picks screen just shows a
+"not configured" message.
+
 ## 📁 Project Structure
 
 ```text
@@ -74,7 +88,8 @@ lib/
 │   ├── player/       # Dual-engine playback (AVPlayer + mpv)
 │   ├── epg/          # Electronic Program Guide (Now/Next)
 │   ├── search/       # Universal search across all content
-│   └── favorites/    # User's saved favorites
+│   ├── favorites/    # User's saved favorites
+│   └── ai_recommendations/  # "Top 40 Now" — AI-ranked EPG picks (OpenAI)
 └── main.dart         # Entry point and DI initialization
 ```
 

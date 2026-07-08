@@ -1,3 +1,6 @@
 {
-  "OPENAI_API_KEY": "sk-replace-me"
+  "OPENAI_API_KEY": "sk-replace-me",
+  "DEV_XTREAM_URL": "",
+  "DEV_XTREAM_USERNAME": "",
+  "DEV_XTREAM_PASSWORD": ""
 }

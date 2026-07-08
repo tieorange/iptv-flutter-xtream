@@ -1,9 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/logging/app_talker.dart';
 import '../../../../core/utils/url_scrubber.dart';
 import '../../domain/entities/playback_source.dart';
 import '../../domain/repositories/playback_controller.dart';
@@ -26,6 +26,7 @@ class MpvPlayerController implements PlaybackController {
 
   @override
   TaskEither<PlaybackFailure, Unit> initialize(PlaybackSource source) {
+    appTalker.info('MpvPlayerController: opening ${scrubMessage(source.url)}');
     return TaskEither.tryCatch(
       () async {
         _videoController = VideoController(_player);
@@ -33,8 +34,11 @@ class MpvPlayerController implements PlaybackController {
         return unit;
       },
       (error, stackTrace) {
-        debugPrint('MpvPlayerController initialization failed: $error');
-        debugPrint('Stack trace: $stackTrace');
+        appTalker.error(
+          'MpvPlayerController initialization failed: ${scrubMessage(error.toString())}',
+          error,
+          stackTrace,
+        );
         return PlaybackFailure(scrubMessage(error.toString()));
       },
     );

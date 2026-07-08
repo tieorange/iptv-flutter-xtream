@@ -29,6 +29,7 @@ import '../../features/series/presentation/pages/series_player_page.dart';
 import '../../features/series/presentation/pages/series_seasons_page.dart';
 import '../../features/favorites/presentation/pages/favorites_page.dart';
 import '../../features/search/presentation/pages/search_page.dart';
+import '../../features/ai_recommendations/presentation/pages/ai_recommendations_page.dart';
 
 /// Full Phase-1 route table from PLAN.md, wired up front in M0 so every
 /// later milestone only swaps a placeholder page for the real one — the
@@ -176,6 +177,11 @@ GoRouter buildAppRouter() {
         path: '/player/series/:episodeId',
         name: 'playerSeries',
         builder: (context, state) => SeriesPlayerPage(episode: state.extra as SeriesEpisode),
+      ),
+      GoRoute(
+        path: '/ai-picks',
+        name: 'aiPicks',
+        builder: (context, state) => const AiRecommendationsPage(),
       ),
     ],
   );

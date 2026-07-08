@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/logging/app_talker.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../domain/entities/favorite_item.dart';
 import '../../domain/usecases/is_favorite_usecase.dart';
@@ -44,8 +45,17 @@ class _FavoriteButtonState extends State<FavoriteButton> {
   Future<void> _toggle() async {
     final profileId = _profileId;
     if (profileId == null) return;
-    setState(() => _isFavorite = !(_isFavorite ?? false));
-    await getIt<ToggleFavoriteUseCase>()(profileId, widget.item).run();
+    final nowFavorite = !(_isFavorite ?? false);
+    setState(() => _isFavorite = nowFavorite);
+    final result = await getIt<ToggleFavoriteUseCase>()(profileId, widget.item).run();
+    result.fold(
+      (failure) => appTalker.error(
+        'FavoriteButton: toggle failed for ${widget.item.name} — ${failure.message}',
+      ),
+      (_) => appTalker.info(
+        'FavoriteButton: ${widget.item.name} ${nowFavorite ? "added to" : "removed from"} favorites',
+      ),
+    );
   }
 
   @override
