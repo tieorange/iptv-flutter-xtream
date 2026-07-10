@@ -45,6 +45,12 @@ class MpvPlayerController implements PlaybackController {
   }
 
   @override
+  Future<void> pause() => _player.pause();
+
+  @override
+  Future<void> resume() => _player.play();
+
+  @override
   Future<void> dispose() async {
     await _player.dispose();
   }

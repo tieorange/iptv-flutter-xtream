@@ -42,3 +42,11 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // CastOptionsProvider.kt references these classes directly at compile
+    // time; flutter_chrome_cast pulls the same artifact transitively for
+    // its own use, but that's an `implementation` (non-transitive) scope
+    // dependency, so the app module needs its own reference to compile.
+    implementation("com.google.android.gms:play-services-cast-framework:21.5.0")
+}

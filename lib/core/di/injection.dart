@@ -38,12 +38,16 @@ import '../../features/live_tv/data/repositories/live_tv_repository_impl.dart';
 import '../../features/live_tv/domain/repositories/live_tv_repository.dart';
 import '../../features/live_tv/domain/usecases/get_live_categories_usecase.dart';
 import '../../features/live_tv/domain/usecases/get_live_channels_usecase.dart';
+import '../../features/player/data/cast/cast_controller_impl.dart';
 import '../../features/player/data/engines/playback_engine_selector_impl.dart';
 import '../../features/player/data/probes/hls_availability_probe.dart';
 import '../../features/player/domain/repositories/playback_engine_selector.dart';
+import '../../features/player/domain/services/cast_controller.dart';
+import '../../features/player/domain/usecases/cast_channel_usecase.dart';
 import '../../features/player/domain/usecases/play_channel_usecase.dart';
 import '../../features/player/domain/usecases/play_series_episode_usecase.dart';
 import '../../features/player/domain/usecases/play_vod_item_usecase.dart';
+import '../../features/player/presentation/cubit/cast_cubit.dart';
 import '../../features/player/presentation/cubit/player_cubit.dart';
 import '../../features/search/domain/usecases/search_all_usecase.dart';
 import '../../features/series/data/datasources/series_remote_datasource.dart';
@@ -125,6 +129,12 @@ void configureDependencies() {
     () => PlaybackEngineSelectorImpl(getIt()),
   );
   getIt.registerFactory(() => PlayChannelUseCase(getIt(), getIt()));
+
+  // Chromecast: process-wide singleton controller (session state is
+  // inherently global), page-scoped cubit/use case on top of it.
+  getIt.registerLazySingleton<CastController>(() => CastControllerImpl());
+  getIt.registerFactory(() => CastChannelUseCase(getIt(), getIt()));
+  getIt.registerFactory(() => CastCubit(getIt(), getIt()));
 
   getIt.registerLazySingleton<VodRemoteDataSource>(
     () => VodRemoteDataSource(getIt(), getIt()),

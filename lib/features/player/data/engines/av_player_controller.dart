@@ -44,6 +44,16 @@ class AvPlayerController implements PlaybackController {
   }
 
   @override
+  Future<void> pause() async {
+    await _controller?.pause();
+  }
+
+  @override
+  Future<void> resume() async {
+    await _controller?.play();
+  }
+
+  @override
   Future<void> dispose() async {
     await _controller?.dispose();
     _controller = null;
