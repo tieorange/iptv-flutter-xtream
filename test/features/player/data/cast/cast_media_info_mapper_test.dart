@@ -1,8 +1,3 @@
-// NOTE: asserts against `flutter_chrome_cast`'s `entities.dart` API surface
-// (contentType/streamType/hlsSegmentFormat field and enum names) — verify
-// this still compiles against the installed plugin version after
-// `flutter pub get`, since it couldn't be checked in the environment this
-// was written in.
 import 'package:flutter_chrome_cast/entities.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,7 +16,7 @@ void main() {
 
     expect(info.contentType, 'video/mp2t');
     expect(info.contentUrl.toString(), request.url);
-    expect(info.streamType, CastMediaStreamType.LIVE);
+    expect(info.streamType, CastMediaStreamType.live);
   });
 
   test('maps a .m3u8 request to HLS content type with the TS segment hint', () {
@@ -34,6 +29,6 @@ void main() {
     final info = buildCastMediaInformation(request);
 
     expect(info.contentType, 'application/x-mpegURL');
-    expect(info.hlsSegmentFormat, HLSSegmentFormat.ts);
+    expect(info.hlsSegmentFormat, CastHlsSegmentFormat.ts);
   });
 }

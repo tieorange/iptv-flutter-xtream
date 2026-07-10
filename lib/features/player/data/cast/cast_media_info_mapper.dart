@@ -8,24 +8,24 @@ import '../../domain/entities/cast_media_request.dart';
 /// lets casting succeed for the same raw streams that only the AirPlay-less
 /// mpv fallback engine could play locally. `.m3u8` requests set the HLS
 /// segment format hint since Xtream's HLS segments are themselves MPEG-TS.
-GoogleCastMediaInformationIOS buildCastMediaInformation(CastMediaRequest request) {
+GoogleCastMediaInformation buildCastMediaInformation(CastMediaRequest request) {
   final contentUrl = Uri.parse(request.url);
   final metadata = GoogleCastMovieMediaMetadata(title: request.title);
   return switch (request.container) {
-    CastStreamContainer.mpegTs => GoogleCastMediaInformationIOS(
-        contentId: request.url,
-        contentUrl: contentUrl,
-        contentType: 'video/mp2t',
-        streamType: CastMediaStreamType.LIVE,
-        metadata: metadata,
-      ),
-    CastStreamContainer.hls => GoogleCastMediaInformationIOS(
-        contentId: request.url,
-        contentUrl: contentUrl,
-        contentType: 'application/x-mpegURL',
-        streamType: CastMediaStreamType.LIVE,
-        hlsSegmentFormat: HLSSegmentFormat.ts,
-        metadata: metadata,
-      ),
+    CastStreamContainer.mpegTs => GoogleCastMediaInformation(
+      contentId: request.url,
+      contentUrl: contentUrl,
+      contentType: 'video/mp2t',
+      streamType: CastMediaStreamType.live,
+      metadata: metadata,
+    ),
+    CastStreamContainer.hls => GoogleCastMediaInformation(
+      contentId: request.url,
+      contentUrl: contentUrl,
+      contentType: 'application/x-mpegURL',
+      streamType: CastMediaStreamType.live,
+      hlsSegmentFormat: CastHlsSegmentFormat.ts,
+      metadata: metadata,
+    ),
   };
 }

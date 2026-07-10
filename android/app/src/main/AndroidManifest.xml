@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <application
         android:label="iptv"
         android:name="${applicationName}"
@@ -30,11 +31,19 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- Google Cast SDK: points the Cast Application Framework at
-             CastOptionsProvider.kt so Chromecast discovery/sessions work. -->
+        <!-- Google Cast SDK: `flutter_chrome_cast` ships its own
+             OptionsProvider that reads the options set via
+             `GoogleCastContext.instance.setSharedInstanceWithOptions` in
+             lib/core/cast/cast_bootstrap.dart at runtime — apps aren't meant
+             to supply their own OptionsProvider class here. -->
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-            android:value="com.tieorange.iptv.CastOptionsProvider" />
+            android:value="com.felnanuke.google_cast.GoogleCastOptionsProvider" />
+
+        <service
+            android:name="com.google.android.gms.cast.framework.media.MediaNotificationService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

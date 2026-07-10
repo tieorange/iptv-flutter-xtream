@@ -39,10 +39,7 @@ class IptvApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider.value(
       value: getIt<AuthCubit>(),
-      child: MaterialApp.router(
-        title: 'IPTV',
-        routerConfig: buildAppRouter(),
-      ),
+      child: MaterialApp.router(title: 'IPTV', routerConfig: buildAppRouter()),
     );
   }
 }

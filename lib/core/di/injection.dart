@@ -117,14 +117,20 @@ void configureDependencies() {
   getIt.registerLazySingleton<EpgRepository>(() => EpgRepositoryImpl(getIt()));
   getIt.registerFactory(() => GetNowNextUseCase(getIt()));
 
-  getIt.registerLazySingleton<FavoritesLocalDataSource>(() => FavoritesLocalDataSource());
-  getIt.registerLazySingleton<FavoritesRepository>(() => FavoritesRepositoryImpl(getIt()));
+  getIt.registerLazySingleton<FavoritesLocalDataSource>(
+    () => FavoritesLocalDataSource(),
+  );
+  getIt.registerLazySingleton<FavoritesRepository>(
+    () => FavoritesRepositoryImpl(getIt()),
+  );
   getIt.registerFactory(() => GetFavoritesUseCase(getIt()));
   getIt.registerFactory(() => IsFavoriteUseCase(getIt()));
   getIt.registerFactory(() => ToggleFavoriteUseCase(getIt()));
 
   // Player module last — it only depends on LiveTvRepository above.
-  getIt.registerLazySingleton<HlsAvailabilityProbe>(() => HlsAvailabilityProbe(getIt()));
+  getIt.registerLazySingleton<HlsAvailabilityProbe>(
+    () => HlsAvailabilityProbe(getIt()),
+  );
   getIt.registerLazySingleton<PlaybackEngineSelector>(
     () => PlaybackEngineSelectorImpl(getIt()),
   );
@@ -148,7 +154,9 @@ void configureDependencies() {
   getIt.registerLazySingleton<SeriesRemoteDataSource>(
     () => SeriesRemoteDataSource(getIt(), getIt()),
   );
-  getIt.registerLazySingleton<SeriesRepository>(() => SeriesRepositoryImpl(getIt()));
+  getIt.registerLazySingleton<SeriesRepository>(
+    () => SeriesRepositoryImpl(getIt()),
+  );
   getIt.registerFactory(() => GetSeriesCategoriesUseCase(getIt()));
   getIt.registerFactory(() => GetSeriesUseCase(getIt()));
   getIt.registerFactory(() => GetSeriesDetailUseCase(getIt()));
@@ -160,7 +168,9 @@ void configureDependencies() {
 
   // Singleton: caches the flat live/VOD/series lists in memory for the
   // session so repeated searches don't re-fetch thousands of items.
-  getIt.registerLazySingleton(() => SearchAllUseCase(getIt(), getIt(), getIt()));
+  getIt.registerLazySingleton(
+    () => SearchAllUseCase(getIt(), getIt(), getIt()),
+  );
 
   // "Top 40 Now" AI picks — depends on LiveTvRepository/EpgRepository above.
   getIt.registerLazySingleton<Dio>(

@@ -25,28 +25,41 @@ void main() {
     repository = _MockLiveTvRepository();
     probe = _MockProbe();
     useCase = CastChannelUseCase(repository, probe);
-    when(() => repository.getStreamUrl(channel, format: 'm3u8'))
-        .thenReturn(TaskEither.right(m3u8Url));
-    when(() => repository.getStreamUrl(channel, format: 'ts')).thenReturn(TaskEither.right(tsUrl));
+    when(
+      () => repository.getStreamUrl(channel, format: 'm3u8'),
+    ).thenReturn(TaskEither.right(m3u8Url));
+    when(
+      () => repository.getStreamUrl(channel, format: 'ts'),
+    ).thenReturn(TaskEither.right(tsUrl));
   });
 
-  test('casts the m3u8 URL as HLS when the probe reports it available', () async {
-    when(() => probe.isAvailable(m3u8Url)).thenAnswer((_) async => true);
+  test(
+    'casts the m3u8 URL as HLS when the probe reports it available',
+    () async {
+      when(() => probe.isAvailable(m3u8Url)).thenAnswer((_) async => true);
 
-    final result = await useCase(channel).run();
+      final result = await useCase(channel).run();
 
-    final request = result.getOrElse((_) => throw StateError('expected Right'));
-    expect(request.url, m3u8Url);
-    expect(request.container, CastStreamContainer.hls);
-  });
+      final request = result.getOrElse(
+        (_) => throw StateError('expected Right'),
+      );
+      expect(request.url, m3u8Url);
+      expect(request.container, CastStreamContainer.hls);
+    },
+  );
 
-  test('casts the raw ts URL as MPEG-TS when the probe reports the m3u8 unavailable', () async {
-    when(() => probe.isAvailable(m3u8Url)).thenAnswer((_) async => false);
+  test(
+    'casts the raw ts URL as MPEG-TS when the probe reports the m3u8 unavailable',
+    () async {
+      when(() => probe.isAvailable(m3u8Url)).thenAnswer((_) async => false);
 
-    final result = await useCase(channel).run();
+      final result = await useCase(channel).run();
 
-    final request = result.getOrElse((_) => throw StateError('expected Right'));
-    expect(request.url, tsUrl);
-    expect(request.container, CastStreamContainer.mpegTs);
-  });
+      final request = result.getOrElse(
+        (_) => throw StateError('expected Right'),
+      );
+      expect(request.url, tsUrl);
+      expect(request.container, CastStreamContainer.mpegTs);
+    },
+  );
 }

@@ -24,7 +24,8 @@ class CastButton extends StatelessWidget {
         isConnected ? Icons.cast_connected : Icons.cast,
         color: Colors.white,
       ),
-      onPressed: () => isConnected ? cubit.stopCasting() : _showDevicePicker(context, cubit),
+      onPressed: () =>
+          isConnected ? cubit.stopCasting() : _showDevicePicker(context, cubit),
     );
   }
 

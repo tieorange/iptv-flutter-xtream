@@ -44,13 +44,17 @@ class PlayerPage extends StatelessWidget {
                   Expanded(
                     child: Center(
                       child: PlayerBody(
-                        onRetry: () => context.read<PlayerCubit>().playChannel(channel),
+                        onRetry: () =>
+                            context.read<PlayerCubit>().playChannel(channel),
                         castButton: CastButton(channel: channel),
                       ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: NowNextStrip(channelId: channel.id),
                   ),
                 ],

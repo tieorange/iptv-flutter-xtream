@@ -17,24 +17,33 @@ import 'cast_media_info_mapper.dart';
 /// inherently process-wide, unlike the per-playback [PlaybackController]s.
 class CastControllerImpl implements CastController {
   CastControllerImpl()
-      : _discoveryManager = GoogleCastDiscoveryManager.instance,
-        _sessionManager = GoogleCastSessionManager.instance {
-    _sessionSubscription = _sessionManager.currentSessionStream.listen(_onSessionChanged);
+    : _discoveryManager = GoogleCastDiscoveryManager.instance,
+      _sessionManager = GoogleCastSessionManager.instance {
+    _sessionSubscription = _sessionManager.currentSessionStream.listen(
+      _onSessionChanged,
+    );
   }
 
-  final GoogleCastDiscoveryManager _discoveryManager;
-  final GoogleCastSessionManager _sessionManager;
+  final GoogleCastDiscoveryManagerPlatformInterface _discoveryManager;
+  final GoogleCastSessionManagerPlatformInterface _sessionManager;
   late final StreamSubscription<GoogleCastSession?> _sessionSubscription;
 
-  final _sessionStateController = StreamController<CastSessionState>.broadcast();
+  final _sessionStateController =
+      StreamController<CastSessionState>.broadcast();
 
   @override
   Stream<CastSessionState> get sessionState => _sessionStateController.stream;
 
   @override
-  Stream<List<CastDevice>> get availableDevices => _discoveryManager.devicesStream.map(
+  Stream<List<CastDevice>> get availableDevices =>
+      _discoveryManager.devicesStream.map(
         (devices) => devices
-            .map((device) => CastDevice(id: device.deviceID, friendlyName: device.friendlyName))
+            .map(
+              (device) => CastDevice(
+                id: device.deviceID,
+                friendlyName: device.friendlyName,
+              ),
+            )
             .toList(),
       );
 
@@ -45,7 +54,9 @@ class CastControllerImpl implements CastController {
       return;
     }
     _sessionStateController.add(
-      CastConnected(CastDevice(id: device.deviceID, friendlyName: device.friendlyName)),
+      CastConnected(
+        CastDevice(id: device.deviceID, friendlyName: device.friendlyName),
+      ),
     );
   }
 
@@ -72,7 +83,9 @@ class CastControllerImpl implements CastController {
 
   @override
   Future<void> loadMedia(CastMediaRequest request) {
-    return GoogleCastRemoteMediaClient.instance.loadMedia(buildCastMediaInformation(request));
+    return GoogleCastRemoteMediaClient.instance.loadMedia(
+      buildCastMediaInformation(request),
+    );
   }
 
   @override

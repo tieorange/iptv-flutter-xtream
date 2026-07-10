@@ -14,8 +14,11 @@ import '../../domain/usecases/cast_channel_usecase.dart';
 /// machine. [PlayerPage] listens to both and pauses/resumes local playback
 /// when a cast session starts/ends.
 class CastCubit extends Cubit<CastSessionState> {
-  CastCubit(this._castController, this._castChannelUseCase) : super(const CastDisconnected()) {
-    _sessionSubscription = _castController.sessionState.listen(_onSessionChanged);
+  CastCubit(this._castController, this._castChannelUseCase)
+    : super(const CastDisconnected()) {
+    _sessionSubscription = _castController.sessionState.listen(
+      _onSessionChanged,
+    );
   }
 
   final CastController _castController;

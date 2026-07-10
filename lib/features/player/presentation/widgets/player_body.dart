@@ -27,24 +27,32 @@ class PlayerBody extends StatelessWidget {
         return switch (state) {
           PlayerLoading() => const CircularProgressIndicator(),
           PlayerError(message: final message) => Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(message, textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  FilledButton(onPressed: onRetry, child: const Text('Retry')),
-                ],
-              ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(message, textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton(onPressed: onRetry, child: const Text('Retry')),
+              ],
             ),
-          PlayerReady(controller: final controller, isFallbackEngine: final fallback, isLive: final isLive) =>
+          ),
+          PlayerReady(
+            controller: final controller,
+            isFallbackEngine: final fallback,
+            isLive: final isLive,
+          ) =>
             Stack(
               alignment: Alignment.bottomLeft,
               children: [
                 switch (controller) {
-                  AvPlayerController() =>
-                    PlayerChromeVideoPlayer(controller: controller, isLive: isLive),
-                  MpvPlayerController() => PlayerChromeMediaKit(controller: controller),
+                  AvPlayerController() => PlayerChromeVideoPlayer(
+                    controller: controller,
+                    isLive: isLive,
+                  ),
+                  MpvPlayerController() => PlayerChromeMediaKit(
+                    controller: controller,
+                  ),
                   _ => const Text('Unsupported playback engine'),
                 },
                 if (fallback)

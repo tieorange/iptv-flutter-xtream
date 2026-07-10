@@ -19,26 +19,28 @@ class CastChannelUseCase {
   final HlsAvailabilityProbe _probe;
 
   TaskEither<Failure, CastMediaRequest> call(LiveChannel channel) {
-    return _repository.getStreamUrl(channel, format: 'm3u8').flatMap(
-      (m3u8Url) => _repository.getStreamUrl(channel, format: 'ts').flatMap(
-        (tsUrl) => TaskEither<Failure, CastMediaRequest>.tryCatch(
-          () async {
-            final hlsAvailable = await _probe.isAvailable(m3u8Url);
-            return hlsAvailable
-                ? CastMediaRequest(
-                    url: m3u8Url,
-                    container: CastStreamContainer.hls,
-                    title: channel.name,
-                  )
-                : CastMediaRequest(
-                    url: tsUrl,
-                    container: CastStreamContainer.mpegTs,
-                    title: channel.name,
-                  );
-          },
-          (error, _) => PlaybackFailure(error.toString()),
-        ),
-      ),
-    );
+    return _repository
+        .getStreamUrl(channel, format: 'm3u8')
+        .flatMap(
+          (m3u8Url) => _repository
+              .getStreamUrl(channel, format: 'ts')
+              .flatMap(
+                (tsUrl) =>
+                    TaskEither<Failure, CastMediaRequest>.tryCatch(() async {
+                      final hlsAvailable = await _probe.isAvailable(m3u8Url);
+                      return hlsAvailable
+                          ? CastMediaRequest(
+                              url: m3u8Url,
+                              container: CastStreamContainer.hls,
+                              title: channel.name,
+                            )
+                          : CastMediaRequest(
+                              url: tsUrl,
+                              container: CastStreamContainer.mpegTs,
+                              title: channel.name,
+                            );
+                    }, (error, _) => PlaybackFailure(error.toString())),
+              ),
+        );
   }
 }
