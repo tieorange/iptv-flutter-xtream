@@ -26,7 +26,9 @@ class AvPlayerController implements PlaybackController {
     appTalker.info('AvPlayerController: opening ${scrubMessage(source.url)}');
     return TaskEither.tryCatch(
       () async {
-        final controller = VideoPlayerController.networkUrl(Uri.parse(source.url));
+        final controller = VideoPlayerController.networkUrl(
+          Uri.parse(source.url),
+        );
         await controller.initialize();
         await controller.play();
         _controller = controller;
@@ -41,6 +43,16 @@ class AvPlayerController implements PlaybackController {
         return PlaybackFailure(scrubMessage(error.toString()));
       },
     );
+  }
+
+  @override
+  Future<void> pause() async {
+    await _controller?.pause();
+  }
+
+  @override
+  Future<void> resume() async {
+    await _controller?.play();
   }
 
   @override

@@ -10,5 +10,12 @@ import '../entities/playback_source.dart';
 abstract interface class PlaybackController {
   TaskEither<PlaybackFailure, Unit> initialize(PlaybackSource source);
 
+  /// Pauses local playback — used when a Chromecast session takes over so
+  /// the phone isn't decoding the stream at the same time as the TV.
+  Future<void> pause();
+
+  /// Resumes local playback after a Chromecast session ends.
+  Future<void> resume();
+
   Future<void> dispose();
 }

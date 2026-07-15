@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:talker_bloc_logger/talker_bloc_logger.dart';
 
+import 'core/cast/cast_bootstrap.dart';
 import 'core/di/injection.dart';
 import 'core/logging/app_talker.dart';
 import 'core/router/app_router.dart';
@@ -17,10 +18,16 @@ void main() {
   };
 
   runZonedGuarded(() {
+    WidgetsFlutterBinding.ensureInitialized();
     MediaKit.ensureInitialized();
     configureDependencies();
     Bloc.observer = TalkerBlocObserver(talker: appTalker);
     getIt<AuthCubit>().restoreActiveProfile();
+    unawaited(
+      initializeCasting().catchError(
+        (error, stack) => appTalker.handle(error, stack),
+      ),
+    );
     runApp(const IptvApp());
   }, (error, stack) => appTalker.handle(error, stack));
 }
@@ -32,10 +39,7 @@ class IptvApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider.value(
       value: getIt<AuthCubit>(),
-      child: MaterialApp.router(
-        title: 'IPTV',
-        routerConfig: buildAppRouter(),
-      ),
+      child: MaterialApp.router(title: 'IPTV', routerConfig: buildAppRouter()),
     );
   }
 }

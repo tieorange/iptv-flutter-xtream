@@ -38,12 +38,16 @@ import '../../features/live_tv/data/repositories/live_tv_repository_impl.dart';
 import '../../features/live_tv/domain/repositories/live_tv_repository.dart';
 import '../../features/live_tv/domain/usecases/get_live_categories_usecase.dart';
 import '../../features/live_tv/domain/usecases/get_live_channels_usecase.dart';
+import '../../features/player/data/cast/cast_controller_impl.dart';
 import '../../features/player/data/engines/playback_engine_selector_impl.dart';
 import '../../features/player/data/probes/hls_availability_probe.dart';
 import '../../features/player/domain/repositories/playback_engine_selector.dart';
+import '../../features/player/domain/services/cast_controller.dart';
+import '../../features/player/domain/usecases/cast_channel_usecase.dart';
 import '../../features/player/domain/usecases/play_channel_usecase.dart';
 import '../../features/player/domain/usecases/play_series_episode_usecase.dart';
 import '../../features/player/domain/usecases/play_vod_item_usecase.dart';
+import '../../features/player/presentation/cubit/cast_cubit.dart';
 import '../../features/player/presentation/cubit/player_cubit.dart';
 import '../../features/search/domain/usecases/search_all_usecase.dart';
 import '../../features/series/data/datasources/series_remote_datasource.dart';
@@ -113,18 +117,30 @@ void configureDependencies() {
   getIt.registerLazySingleton<EpgRepository>(() => EpgRepositoryImpl(getIt()));
   getIt.registerFactory(() => GetNowNextUseCase(getIt()));
 
-  getIt.registerLazySingleton<FavoritesLocalDataSource>(() => FavoritesLocalDataSource());
-  getIt.registerLazySingleton<FavoritesRepository>(() => FavoritesRepositoryImpl(getIt()));
+  getIt.registerLazySingleton<FavoritesLocalDataSource>(
+    () => FavoritesLocalDataSource(),
+  );
+  getIt.registerLazySingleton<FavoritesRepository>(
+    () => FavoritesRepositoryImpl(getIt()),
+  );
   getIt.registerFactory(() => GetFavoritesUseCase(getIt()));
   getIt.registerFactory(() => IsFavoriteUseCase(getIt()));
   getIt.registerFactory(() => ToggleFavoriteUseCase(getIt()));
 
   // Player module last — it only depends on LiveTvRepository above.
-  getIt.registerLazySingleton<HlsAvailabilityProbe>(() => HlsAvailabilityProbe(getIt()));
+  getIt.registerLazySingleton<HlsAvailabilityProbe>(
+    () => HlsAvailabilityProbe(getIt()),
+  );
   getIt.registerLazySingleton<PlaybackEngineSelector>(
     () => PlaybackEngineSelectorImpl(getIt()),
   );
   getIt.registerFactory(() => PlayChannelUseCase(getIt(), getIt()));
+
+  // Chromecast: process-wide singleton controller (session state is
+  // inherently global), page-scoped cubit/use case on top of it.
+  getIt.registerLazySingleton<CastController>(() => CastControllerImpl());
+  getIt.registerFactory(() => CastChannelUseCase(getIt(), getIt()));
+  getIt.registerFactory(() => CastCubit(getIt(), getIt()));
 
   getIt.registerLazySingleton<VodRemoteDataSource>(
     () => VodRemoteDataSource(getIt(), getIt()),
@@ -138,7 +154,9 @@ void configureDependencies() {
   getIt.registerLazySingleton<SeriesRemoteDataSource>(
     () => SeriesRemoteDataSource(getIt(), getIt()),
   );
-  getIt.registerLazySingleton<SeriesRepository>(() => SeriesRepositoryImpl(getIt()));
+  getIt.registerLazySingleton<SeriesRepository>(
+    () => SeriesRepositoryImpl(getIt()),
+  );
   getIt.registerFactory(() => GetSeriesCategoriesUseCase(getIt()));
   getIt.registerFactory(() => GetSeriesUseCase(getIt()));
   getIt.registerFactory(() => GetSeriesDetailUseCase(getIt()));
@@ -150,7 +168,9 @@ void configureDependencies() {
 
   // Singleton: caches the flat live/VOD/series lists in memory for the
   // session so repeated searches don't re-fetch thousands of items.
-  getIt.registerLazySingleton(() => SearchAllUseCase(getIt(), getIt(), getIt()));
+  getIt.registerLazySingleton(
+    () => SearchAllUseCase(getIt(), getIt(), getIt()),
+  );
 
   // "Top 40 Now" AI picks — depends on LiveTvRepository/EpgRepository above.
   getIt.registerLazySingleton<Dio>(
