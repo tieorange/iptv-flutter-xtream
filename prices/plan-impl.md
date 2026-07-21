@@ -11,38 +11,47 @@ See `prices/plan.md` for the full architecture/data-model rationale behind each 
 ## Phase 0 — Recon (done)
 
 Confirmed via `curl` that `silpo.ua` sits behind an active Cloudflare Turnstile challenge (403,
-`cf-mitigated: challenge`). Identified two candidate reverse-engineered JSON endpoints
-(`EcomCatalogGlobal`, `sf-ecom-api`) and a DOM-scrape fallback path over `/offers*` pages. Full
-writeup: `prices/plan.md` §2.
+`cf-mitigated: challenge`) when a browser-spoofing `User-Agent` is used. Identified two candidate
+reverse-engineered JSON endpoints and a DOM-scrape fallback path over `/offers*` pages. Full
+writeup: `prices/plan.md` §2 (original version).
 
-**Checkpoint:** ✅ complete — this document and `plan.md` are the output.
+**Checkpoint:** ✅ complete.
 
 ---
 
-## Phase 1 — Scraper spike (validation, throwaway-quality code OK)
+## Phase 1 — Scraper spike — ✅ done, findings below
 
-Goal: answer the one open question that determines the rest of the backend design — *can a
-Playwright-harvested session call the reverse-engineered catalog API directly, or do we need to
-scrape rendered pages?*
+Goal was: answer the one open question that determines the rest of the backend design — *can we
+reach Silpo's product/discount data without a headless browser?*
 
-Steps:
-1. `prices/backend/` — scaffold a minimal Node.js + TypeScript project with Playwright installed.
-2. Write a script that launches Chromium, navigates to `silpo.ua`, waits for the Cloudflare
-   challenge to clear, and captures cookies.
-3. Using that session/cookies, attempt a direct `POST` to `EcomCatalogGlobal` (and/or `GET` to
-   `sf-ecom-api`) for a known Rivne branch — first find a valid `filialId`/`branchId` for a Rivne
-   store (likely discoverable via the site's store-locator UI or by inspecting network calls made
-   when browsing `silpo.ua` with a Rivne location selected).
-4. If step 3 works reliably (not challenged): that's the primary data path.
-5. If step 3 keeps getting challenged: instead navigate `/offers`, `/offers/vyshukuvach-znyzhok`,
-   `/offers/cinotyzhyky` in Playwright, intercept network responses (`page.on('response')`) for
-   JSON payloads, or extract embedded state/JSON from the rendered HTML.
-6. Write findings to `prices/backend/RECON.md`: which strategy works, the exact request/response
-   shapes observed, the Rivne branch ID(s) found, and any Cloudflare quirks (challenge frequency,
-   cookie lifetime, whether headless vs headed matters).
+**Result: yes.** Re-verified with a live terminal spike (not secondary sources) on 2026-07-15:
 
-**Checkpoint:** share `RECON.md` findings before building the real scraper — the chosen strategy
-(direct API vs DOM scrape) changes the Phase 2 implementation shape.
+1. Confirmed `silpo.ua` 403s a spoofed-Chrome-UA request but returns 200 for the same request with
+   an honest/curl UA — reproduced 3x with curl, reproduced independently with Node `fetch`/`undici`
+   (3 UA variants tested, consistent results both times). See `prices/plan.md` §2.1.
+2. Confirmed the `/offers*` HTML pages carry **no product data** server-side (checked the full
+   2.8 MB `serverApp-state` blob and the rendered HTML for price-like tokens — zero matches) — so
+   even with the UA fix, HTML scraping of those pages was a dead end for actual discount data.
+3. Confirmed `api.catalog.ecom.silpo.ua/api/2.0/exec/EcomCatalogGlobal` times out (`HTTP 408`)
+   consistently — deprioritized.
+4. **Found the real data source**: `sf-ecom-api.silpo.ua` has no Cloudflare bot-check at all
+   (works with any UA, including none). `GET /v1/uk/branches?limit=1000` returns all 451 branches;
+   filtering for `cityFull === "Рівне"` gives 5 real branch IDs (recorded in `plan.md` §2.3).
+   `GET /v1/uk/branches/{branchId}/products?mustHavePromotion=true&limit=500&offset=N` returns
+   real, structured discount data — 5,673 promotional items in one Rivne branch alone, full
+   product/price/category/image schema. Full request/response detail in `plan.md` §2.3.
+
+**No headless browser is needed anywhere in this pipeline** — this simplifies Phase 2
+significantly versus the original Playwright-based plan.
+
+**Remaining open item carried into Phase 2**: confirm the image CDN base URL to prefix the bare
+`icon` filename with (by analogy to `promotions[].iconPath`, likely a `content.silpo.ua` host —
+needs a quick empirical check, e.g. fetching a candidate URL and confirming it 200s with an
+image).
+
+**Checkpoint:** ✅ findings above are the deliverable for this phase — proceed to Phase 2 with the
+plain-HTTP `sf-ecom-api` approach, no fallback path needed unless it breaks later (see
+`plan.md` §8 for the documented fallback if it ever starts bot-checking).
 
 ---
 
@@ -51,13 +60,20 @@ Steps:
 Goal: turn the Phase 1 spike into a repeatable, normalized data pipeline.
 
 Steps:
-1. Implement the chosen acquisition strategy as a proper module (`prices/backend/src/scraper/`).
-2. Normalize raw results into the `Discount` shape from `plan.md` §4 (price parsing, discount %
-   calculation, dropping malformed items with a warning log).
-3. Set up SQLite (`better-sqlite3`) with a `discounts` table (upsert by `id`) and a `scrape_runs`
+1. `prices/backend/` — scaffold a Node.js + TypeScript project (plain `fetch`/`axios`, no
+   Playwright dependency needed per Phase 1 findings).
+2. `src/scraper/branches.ts` — fetch `GET /v1/uk/branches?limit=1000`, filter for Rivne, cache the
+   5 branch IDs from `plan.md` §2.3 as config (refresh weekly, don't hardcode permanently).
+3. `src/scraper/products.ts` — page through
+   `GET /v1/uk/branches/{branchId}/products?mustHavePromotion=true&limit=500&offset=N` per branch
+   until `offset >= total`.
+4. `src/scraper/normalize.ts` — raw item → `Discount[]` per `plan.md` §4/§5 field mapping,
+   confirm and hardcode the image CDN base URL (Phase 1's one remaining open item), compute
+   `discountPercent`, drop malformed items with a warning log.
+5. Set up SQLite (`better-sqlite3`) with a `discounts` table (upsert by `id`) and a `scrape_runs`
    table (timestamp, item count, status) for observability.
-4. Add a scheduled job runner (`node-cron`) at a conservative cadence (e.g. 2-4 runs/day).
-5. Add minimal alerting/logging: a run that yields 0 items logs an error-level warning instead of
+6. Add a scheduled job runner (`node-cron`) at a conservative cadence (e.g. 2-4 runs/day).
+7. Add minimal alerting/logging: a run that yields 0 items logs an error-level warning instead of
    wiping the cache; the last good data keeps serving.
 
 **Checkpoint:** demo a manual scrape run populating SQLite with real Silpo discount rows for at
